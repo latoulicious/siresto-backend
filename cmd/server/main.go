@@ -6,8 +6,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
-	"github.com/latoulicious/siresto-backend/internal/config"
+	"github.com/latoulicious/siresto-backend/internal/config" // Import config package
 	"github.com/latoulicious/siresto-backend/internal/routes" // Import routes package
+	"github.com/latoulicious/siresto-backend/pkg/logger"      // Import logger package
 )
 
 func main() {
@@ -15,6 +16,12 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found or failed to load, continuing...")
 	}
+
+	// Initialize the logger
+	logger.InitLogger()
+
+	// Log info on start
+	logger.LogInfo("Starting the server...", nil)
 
 	// Connect to database
 	db, err := config.NewGormDB()
