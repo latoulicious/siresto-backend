@@ -4,11 +4,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type QRCode struct {
-	gorm.Model
 	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	Code        string    `gorm:"type:text;unique;not null"`
 	StoreID     uuid.UUID `gorm:"type:uuid"`

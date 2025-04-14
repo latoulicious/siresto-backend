@@ -2,11 +2,9 @@ package domain
 
 import (
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type OrderDetail struct {
-	gorm.Model
 	ID            uuid.UUID  `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	OrderID       uuid.UUID  `gorm:"type:uuid;not null"`
 	Order         *Order     `gorm:"foreignKey:OrderID"`

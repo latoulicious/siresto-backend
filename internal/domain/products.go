@@ -2,11 +2,9 @@ package domain
 
 import (
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Product struct {
-	gorm.Model
 	ID          uuid.UUID   `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	CategoryID  *uuid.UUID  `gorm:"type:uuid"`
 	Category    *Category   `gorm:"foreignKey:CategoryID"`

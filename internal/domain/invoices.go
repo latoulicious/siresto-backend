@@ -4,11 +4,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Invoice struct {
-	gorm.Model
 	ID               uuid.UUID  `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	OrderID          *uuid.UUID `gorm:"type:uuid"`
 	Order            *Order     `gorm:"foreignKey:OrderID"`

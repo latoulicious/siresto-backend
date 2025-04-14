@@ -4,11 +4,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Order struct {
-	gorm.Model
 	ID           uuid.UUID  `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	UserID       *uuid.UUID `gorm:"type:uuid"`
 	User         *User      `gorm:"foreignKey:UserID"`

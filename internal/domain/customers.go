@@ -4,11 +4,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Customer struct {
-	gorm.Model
 	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	Name        string    `gorm:"type:text"`
 	Email       string    `gorm:"type:text"`

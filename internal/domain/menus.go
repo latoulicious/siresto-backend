@@ -4,11 +4,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Menu struct {
-	gorm.Model
 	ID            uuid.UUID  `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	Name          string     `gorm:"type:text;not null"`
 	IsActive      bool       `gorm:"default:true"`
