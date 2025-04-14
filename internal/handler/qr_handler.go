@@ -15,6 +15,48 @@ type QRCodeHandler struct {
 	Service *service.QRCodeService
 }
 
+// ListAllQRCodesHandler lists all QR codes across all stores
+func (h *QRCodeHandler) ListAllQRCodesHandler(c *fiber.Ctx) error {
+	qrs, err := h.Service.ListAllQRCodes()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve QR codes",
+		})
+	}
+
+	return c.JSON(qrs)
+}
+
+// GetQRCodeByCodeHandler retrieves a QR by its ID
+func (h *QRCodeHandler) GetQRCodeByIDHandler(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid QR ID format"})
+	}
+
+	qr, err := h.Service.GetQRCodeByID(id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "QR ID not found"})
+	}
+
+	return c.JSON(qr)
+}
+
+// ListQRCodesHandler lists all QR codes for a store
+func (h *QRCodeHandler) ListQRCodesHandler(c *fiber.Ctx) error {
+	storeID, err := uuid.Parse(c.Params("store_id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid store ID"})
+	}
+
+	qrs, err := h.Service.ListQRCodes(storeID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(qrs)
+}
+
 // CreateQRCodeHandler creates a new QR code
 func (h *QRCodeHandler) CreateQRCodeHandler(c *fiber.Ctx) error {
 	// Input structure
@@ -62,17 +104,6 @@ func (h *QRCodeHandler) CreateQRCodeHandler(c *fiber.Ctx) error {
 	})
 }
 
-// GetQRCodeByCodeHandler retrieves a QR code by its code
-func (h *QRCodeHandler) GetQRCodeByCodeHandler(c *fiber.Ctx) error {
-	code := c.Params("code")
-	qr, err := h.Service.GetQRCodeByCode(code)
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "QR code not found"})
-	}
-
-	return c.JSON(qr)
-}
-
 // UpdateQRCodeHandler updates an existing QR code
 func (h *QRCodeHandler) UpdateQRCodeHandler(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
@@ -112,19 +143,4 @@ func (h *QRCodeHandler) DeleteQRCodeHandler(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
-}
-
-// ListQRCodesHandler lists all QR codes for a store
-func (h *QRCodeHandler) ListQRCodesHandler(c *fiber.Ctx) error {
-	storeID, err := uuid.Parse(c.Params("store_id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid store ID"})
-	}
-
-	qrs, err := h.Service.ListQRCodes(storeID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	return c.JSON(qrs)
 }
