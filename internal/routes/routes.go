@@ -10,10 +10,15 @@ import (
 )
 
 func SetupRoutes(app *fiber.App, db *gorm.DB) {
-	// QR Code domain setup
+	// Initialize the repository, service, and handler for QR codes
 	qrRepo := &repository.QRCodeRepository{DB: db}
 	qrService := &service.QRCodeService{Repo: qrRepo}
 	qrHandler := &handler.QRCodeHandler{Service: qrService}
+
+	// Initialize the repository, service, and handler for logs
+	logRepo := &repository.LogRepository{DB: db}
+	logService := &service.LogService{Repo: logRepo} // Using the pointer here
+	logHandler := &handler.LogHandler{Service: logService}
 
 	// Generic routes
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -30,7 +35,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	})
 	logger.Log.Info("GET /health route registered")
 
-	// Domain routes
+	// QR Domain routes
 	app.Post("/qr-codes", qrHandler.CreateQRCodeHandler)
 	logger.Log.Info("POST /qr-codes route registered")
 
@@ -45,5 +50,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 
 	app.Get("/qr-codes/store/:store_id", qrHandler.ListQRCodesHandler)
 	logger.Log.Info("GET /qr-codes/store/:store_id route registered")
+
+	// Log Domain routes
+	app.Post("/logs", logHandler.CreateLogHandler)
+	logger.Log.Info("POST /logs route registered")
 
 }
