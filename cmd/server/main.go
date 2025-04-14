@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/latoulicious/siresto-backend/internal/config"
+	"github.com/latoulicious/siresto-backend/internal/routes" // Import routes package
 )
 
 func main() {
@@ -29,6 +30,9 @@ func main() {
 
 	// Initialize Fiber
 	app := fiber.New()
+
+	// Setup routes
+	routes.SetupRoutes(app, db)
 
 	// Root endpoint
 	app.Get("/", func(c *fiber.Ctx) error {
