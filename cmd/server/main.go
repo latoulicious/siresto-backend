@@ -51,7 +51,7 @@ func main() {
 		port = "3000"
 	}
 
-	logger.Log.WithField("port", port).Info("Server starting")
+	logger.Log.Info("Server starting on port ", port)
 	if err := app.Listen(":" + port); err != nil {
 		logger.Log.WithError(err).Fatal("Failed to start server")
 	}
