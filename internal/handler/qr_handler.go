@@ -86,6 +86,43 @@ func (h *QRCodeHandler) CreateQRCodeHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(utils.Success("QR code created successfully", createdQR))
 }
 
+// BulkCreateQRCodeHandler creates a new multiple QR code
+func (h QRCodeHandler) BulkCreateQRCodeHandler(c *fiber.Ctx) error {
+	var request struct {
+		StoreID     uuid.UUID  `json:"store_id"`
+		TableCount  int        `json:"table_count"`
+		StartNumber int        `json:"start_number"`
+		Type        string     `json:"type"`
+		MenuURL     string     `json:"menu_url"`
+		ExpiresAt   *time.Time `json:"expires_at"`
+	}
+
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid input", fiber.StatusBadRequest))
+	}
+
+	// Validate input
+	if request.TableCount <= 0 || request.StartNumber < 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid table count or start number", fiber.StatusBadRequest))
+	}
+
+	// Generate QR codes in bulk
+	results, err := h.Service.BulkCreateQRCodes(
+		request.StoreID,
+		request.StartNumber,
+		request.TableCount,
+		request.Type,
+		request.MenuURL,
+		request.ExpiresAt,
+	)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to generate bulk QR codes", fiber.StatusInternalServerError))
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(utils.Success("QR codes created successfully", results))
+}
+
 // UpdateQRCodeHandler updates an existing QR code
 func (h *QRCodeHandler) UpdateQRCodeHandler(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))

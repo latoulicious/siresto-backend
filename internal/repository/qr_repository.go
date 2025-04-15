@@ -45,6 +45,21 @@ func (r *QRCodeRepository) CreateQRCode(qr *domain.QRCode) error {
 	return r.DB.Create(qr).Error
 }
 
+// CreateQRCode will create multiple new QR code record in the database
+func (r QRCodeRepository) BulkCreateQRCodes(qrCodes []*domain.QRCode) error {
+	// Use a transaction for bulk inserts
+	tx := r.DB.Begin()
+
+	for _, qr := range qrCodes {
+		if err := tx.Create(qr).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit().Error
+}
+
 // UpdateQRCode updates an existing QR code record
 func (r *QRCodeRepository) UpdateQRCode(qr *domain.QRCode) error {
 	return r.DB.Save(qr).Error

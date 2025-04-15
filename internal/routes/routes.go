@@ -8,6 +8,7 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/handler"
 	"github.com/latoulicious/siresto-backend/internal/repository"
 	"github.com/latoulicious/siresto-backend/internal/service"
+	"github.com/latoulicious/siresto-backend/internal/utils"
 	"github.com/latoulicious/siresto-backend/pkg/core/logging"
 	"github.com/latoulicious/siresto-backend/pkg/logutil"
 	"gorm.io/gorm"
@@ -65,6 +66,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Post("/qr-codes", qrHandler.CreateQRCodeHandler)
 	logger.LogInfo("POST /api/v1/qr-codes route registered", logutil.Route("POST", "/api/v1/qr-codes"))
 
+	v1.Post("/qr-codes/bulk", qrHandler.BulkCreateQRCodeHandler)
+	logger.LogInfo("POST /api/v1/qr-codes/bulk route registered", logutil.Route("POST", "/api/v1/qr-codes/bulk"))
+
 	v1.Put("/qr-codes/:id", qrHandler.UpdateQRCodeHandler)
 	logger.LogInfo("PUT /api/v1/qr-codes/:id route registered", logutil.Route("PUT", "/api/v1/qr-codes/:id"))
 
@@ -105,20 +109,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	// Log routes
 	v1.Get("/logs", func(c *fiber.Ctx) error {
-		var logs []domain.Log // Assuming your Log model is in the db package
+		var logs []domain.Log
 		if err := db.Find(&logs).Error; err != nil {
 			logger.LogError("Failed to fetch logs", logutil.Route("GET", "/api/v1/logs"))
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"status":  "error",
-				"message": "Failed to fetch logs",
-			})
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve Logs", fiber.StatusInternalServerError))
 		}
 
-		// Return the fetched logs
-		return c.JSON(fiber.Map{
-			"status": "success",
-			"logs":   logs,
-		})
+		return c.Status(fiber.StatusOK).JSON(utils.Success("Logs fetched successfully", logs))
 	})
 	logger.LogInfo("GET /api/v1/logs route registered", logutil.Route("GET", "/api/v1/logs"))
 }
