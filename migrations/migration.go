@@ -16,10 +16,10 @@ func RunMigrations(db *gorm.DB) error {
 	}
 
 	log.Println("Dropping menus table...")
-	// Drop the menus table if it exists
-	if err := db.Migrator().DropTable(&domain.Menu{}); err != nil {
-		return err
-	}
+	// Drop the unused table if it exists
+	// if err := db.Migrator().DropTable(&domain.Menu{}); err != nil {
+	// 	return err
+	// }
 
 	log.Println("Running database migrations...")
 	// Auto-migrate all domain models

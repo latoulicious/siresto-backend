@@ -22,6 +22,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// API v1
 	v1 := app.Group("/api/v1")
 
+	// General routes
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"code":    fiber.StatusOK,
@@ -41,6 +42,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	})
 	logger.LogInfo("GET /health route registered", logutil.Route("GET", "/health"))
 
+	// QR Code routes
 	v1.Get("/qr-codes", qrHandler.ListAllQRCodesHandler)
 	logger.LogInfo("GET /api/v1/qr-codes route registered", logutil.Route("GET", "/api/v1/qr-codes"))
 
@@ -60,7 +62,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("DELETE /api/v1/qr-codes/:id route registered", logutil.Route("DELETE", "/api/v1/qr-codes/:id"))
 
 	// Log routes
-	// New route to get all logs from the database
 	v1.Get("/logs", func(c *fiber.Ctx) error {
 		var logs []domain.Log // Assuming your Log model is in the db package
 		if err := db.Find(&logs).Error; err != nil {
