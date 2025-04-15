@@ -1,7 +1,9 @@
 package service
 
 import (
-	"encoding/json"
+	"context"
+	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
@@ -10,96 +12,63 @@ import (
 )
 
 type CreateLogRequest struct {
-	Level       string
-	Source      string
-	UserID      string
-	IPAddress   string
-	Action      string
-	Entity      string
-	EntityID    string
-	Description string
-	Metadata    string
-	RequestID   string
-	Environment string
-	Application string
-	Hostname    string
-	Type        string
+	Level       string                 `json:"level"`
+	Source      string                 `json:"source"`
+	Action      string                 `json:"action"`
+	Entity      string                 `json:"entity"`
+	EntityID    *uuid.UUID             `json:"entity_id"`
+	UserID      *uuid.UUID             `json:"user_id"`
+	IPAddress   *string                `json:"ip_address"`
+	Description string                 `json:"description"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	RequestID   *string                `json:"request_id"`
+	Environment string                 `json:"environment"`
+	Application string                 `json:"application"`
+	Hostname    *string                `json:"hostname"`
+	Type        string                 `json:"type"`
 }
 
 type LogService struct {
-	Repo repository.LogRepositoryInterface // <-- Change this to use the interface
+	Repo repository.LogRepositoryInterface
 }
 
-// Make sure the CreateLog method is still the same
-func (s *LogService) CreateLog(req CreateLogRequest) error {
-	// Parse UserID as *uuid.UUID if it exists
-	var userID *uuid.UUID
-	if req.UserID != "" {
-		parsedUserID, err := uuid.Parse(req.UserID)
-		if err != nil {
-			return err
-		}
-		userID = &parsedUserID
+func (s *LogService) CreateLog(ctx context.Context, req CreateLogRequest) (*domain.Log, error) {
+	// Validate required fields
+	if req.Level == "" || req.Source == "" || req.Action == "" ||
+		req.Entity == "" || req.Environment == "" || req.Application == "" || req.Type == "" {
+		return nil, errors.New("missing required log fields")
 	}
 
-	// Parse EntityID as *uuid.UUID if it exists
-	var entityID *uuid.UUID
-	if req.EntityID != "" {
-		parsedEntityID, err := uuid.Parse(req.EntityID)
-		if err != nil {
-			return err
-		}
-		entityID = &parsedEntityID
+	// Convert Metadata to JSONB
+	metadataJSON := db.JSONB{}
+	if req.Metadata != nil {
+		metadataJSON = db.JSONB(req.Metadata)
 	}
 
-	// Parse IPAddress as *string if it exists
-	var ipAddress *string
-	if req.IPAddress != "" {
-		ipAddress = &req.IPAddress
-	}
-
-	// Parse Metadata as db.JSONB if it exists
-	var metadata db.JSONB
-	if req.Metadata != "" {
-		if err := json.Unmarshal([]byte(req.Metadata), &metadata); err != nil {
-			return err
-		}
-	}
-
-	// Parse RequestID as *string if it exists
-	var requestID *string
-	if req.RequestID != "" {
-		requestID = &req.RequestID
-	}
-
-	// Parse Hostname as *string if it exists
-	var hostname *string
-	if req.Hostname != "" {
-		hostname = &req.Hostname
-	}
-
-	// Create the Log object
+	// Create the log entity with all fields
 	log := domain.Log{
+		ID:          uuid.New(),
+		Timestamp:   time.Now(),
 		Level:       req.Level,
 		Source:      req.Source,
-		UserID:      userID,
-		IPAddress:   ipAddress,
+		UserID:      req.UserID,
+		IPAddress:   req.IPAddress,
 		Action:      req.Action,
 		Entity:      req.Entity,
-		EntityID:    entityID,
+		EntityID:    req.EntityID,
 		Description: req.Description,
-		Metadata:    metadata,
-		RequestID:   requestID,
+		Metadata:    metadataJSON,
+		RequestID:   req.RequestID,
 		Environment: req.Environment,
 		Application: req.Application,
-		Hostname:    hostname,
+		Hostname:    req.Hostname,
 		Type:        req.Type,
 	}
 
-	// Save log into the repository
-	if err := s.Repo.SaveLog(log); err != nil {
-		return err
+	// Save the log
+	if err := s.Repo.SaveLog(ctx, log); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &log, nil
 }

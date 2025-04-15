@@ -30,16 +30,6 @@ func (r *QRCodeRepository) GetQRCodeByID(id uuid.UUID) (*domain.QRCode, error) {
 	return &qr, nil
 }
 
-// GetQRCodeByCode fetches a QR code by its unique code
-// func (r *QRCodeRepository) GetQRCodeByCode(code string) (*domain.QRCode, error) {
-// 	var qr domain.QRCode
-// 	err := r.DB.Where("code = ?", code).First(&qr).Error
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &qr, nil
-// }
-
 // ListQRCodes fetches all QR codes for a specific store
 func (r *QRCodeRepository) ListQRCodes(storeID uuid.UUID) ([]domain.QRCode, error) {
 	var qrs []domain.QRCode
