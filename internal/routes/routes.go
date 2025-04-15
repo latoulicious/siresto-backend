@@ -19,6 +19,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	qrService := &service.QRCodeService{Repo: qrRepo}
 	qrHandler := &handler.QRCodeHandler{Service: qrService}
 
+	// Category domain
+	categoryRepo := &repository.CategoryRepository{DB: db}
+	categoryService := &service.CategoryService{Repo: categoryRepo}
+	categoryHandler := &handler.CategoryHandler{Service: categoryService}
+
 	// API v1
 	v1 := app.Group("/api/v1")
 
@@ -60,6 +65,22 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	v1.Delete("/qr-codes/:id", qrHandler.DeleteQRCodeHandler)
 	logger.LogInfo("DELETE /api/v1/qr-codes/:id route registered", logutil.Route("DELETE", "/api/v1/qr-codes/:id"))
+
+	// Category routes
+	v1.Get("/categories", categoryHandler.ListAllCategories)
+	logger.LogInfo("GET /api/v1/categories route registered", logutil.Route("GET", "/api/v1/categories"))
+
+	v1.Get("/categories/:id", categoryHandler.GetCategoryByID)
+	logger.LogInfo("GET /api/v1/categories/:id route registered", logutil.Route("GET", "/api/v1/categories/:id"))
+
+	v1.Post("/categories", categoryHandler.CreateCategory)
+	logger.LogInfo("POST /api/v1/categories route registered", logutil.Route("POST", "/api/v1/categories"))
+
+	v1.Put("/categories/:id", categoryHandler.UpdateCategory)
+	logger.LogInfo("PUT /api/v1/categories/:id route registered", logutil.Route("PUT", "/api/v1/categories/:id"))
+
+	v1.Delete("/categories/:id", categoryHandler.DeleteCategory)
+	logger.LogInfo("DELETE /api/v1/categories/:id route registered", logutil.Route("DELETE", "/api/v1/categories/:id"))
 
 	// Log routes
 	v1.Get("/logs", func(c *fiber.Ctx) error {
