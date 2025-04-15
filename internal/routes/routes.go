@@ -24,6 +24,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	categoryService := &service.CategoryService{Repo: categoryRepo}
 	categoryHandler := &handler.CategoryHandler{Service: categoryService}
 
+	// Product domain
+	productRepo := &repository.ProductRepository{DB: db}
+	productService := &service.ProductService{Repo: productRepo}
+	productHandler := &handler.ProductHandler{Service: productService}
+
 	// API v1
 	v1 := app.Group("/api/v1")
 
@@ -81,6 +86,22 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	v1.Delete("/categories/:id", categoryHandler.DeleteCategory)
 	logger.LogInfo("DELETE /api/v1/categories/:id route registered", logutil.Route("DELETE", "/api/v1/categories/:id"))
+
+	// Product routes
+	v1.Get("/products", productHandler.ListAllProducts)
+	logger.LogInfo("GET /api/v1/products route registered", logutil.Route("GET", "/api/v1/products"))
+
+	v1.Get("/products/:id", productHandler.GetProductByID)
+	logger.LogInfo("GET /api/v1/products/:id route registered", logutil.Route("GET", "/api/v1/products/:id"))
+
+	v1.Post("/products", productHandler.CreateProduct)
+	logger.LogInfo("POST /api/v1/products route registered", logutil.Route("POST", "/api/v1/products"))
+
+	v1.Put("/products/:id", productHandler.UpdateProduct)
+	logger.LogInfo("PUT /api/v1/products/:id route registered", logutil.Route("PUT", "/api/v1/products/:id"))
+
+	v1.Delete("/products/:id", productHandler.DeleteProduct)
+	logger.LogInfo("DELETE /api/v1/products/:id route registered", logutil.Route("DELETE", "/api/v1/products/:id"))
 
 	// Log routes
 	v1.Get("/logs", func(c *fiber.Ctx) error {

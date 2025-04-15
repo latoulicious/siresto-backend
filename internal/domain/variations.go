@@ -13,4 +13,5 @@ type Variation struct {
 	PriceAbsolute *float64  `gorm:"type:numeric(10,2)"`
 	IsDefault     bool      `gorm:"default:false"`
 	IsAvailable   bool      `gorm:"default:true"`
+	IsRequired    bool      `gorm:"default:false"`
 }
