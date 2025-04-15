@@ -35,6 +35,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	productService := &service.ProductService{Repo: productRepo}
 	productHandler := &handler.ProductHandler{Service: productService}
 
+	// Variation domain
+	variationRepo := &repository.VariationRepository{DB: db}
+	variationService := &service.VariationService{Repo: variationRepo}
+	variationHandler := &handler.VariationHandler{Service: variationService}
+
 	// API v1
 	v1 := app.Group("/api/v1")
 
@@ -130,6 +135,37 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	v1.Delete("/products/:id", productHandler.DeleteProduct)
 	logger.LogInfo("DELETE /api/v1/products/:id route registered", logutil.Route("DELETE", "/api/v1/products/:id"))
+
+	// Variation Routes (Not tied to a specific product)
+	v1.Get("/variations", variationHandler.ListAllVariations)
+	logger.LogInfo("GET /api/v1/variations route registered", logutil.Route("GET", "/api/v1/variations"))
+
+	v1.Get("/variations/:id", variationHandler.GetVariationByID)
+	logger.LogInfo("GET /api/v1/variations/:id route registered", logutil.Route("GET", "/api/v1/variations/:id"))
+
+	v1.Post("/variations", variationHandler.CreateVariation)
+	logger.LogInfo("POST /api/v1/variations route registered", logutil.Route("POST", "/api/v1/variations"))
+
+	v1.Put("/variations/:id", variationHandler.UpdateVariation)
+	logger.LogInfo("PUT /api/v1/variations/:id route registered", logutil.Route("PUT", "/api/v1/variations/:id"))
+
+	v1.Delete("/variations/:id", variationHandler.DeleteVariation)
+	logger.LogInfo("DELETE /api/v1/variations/:id route registered", logutil.Route("DELETE", "/api/v1/variations/:id"))
+
+	// TODO
+	// Variation Routes (Tied to a specific product)
+
+	// v1.Get("/products/:product_id/variations", variationHandler.ListVariations)
+	// logger.LogInfo("GET /api/v1/products/:product_id/variations route registered", logutil.Route("GET", "/api/v1/products/:product_id/variations"))
+
+	// v1.Post("/products/:product_id/variations", variationHandler.CreateVariation)
+	// logger.LogInfo("POST /api/v1/products/:product_id/variations route registered", logutil.Route("POST", "/api/v1/products/:product_id/variations"))
+
+	// v1.Put("/products/:product_id/variations/:id", variationHandler.UpdateVariation)
+	// logger.LogInfo("PUT /api/v1/products/:product_id/variations/:id route registered", logutil.Route("PUT", "/api/v1/products/:product_id/variations/:id"))
+
+	// v1.Delete("/products/:product_id/variations/:id", variationHandler.DeleteVariation)
+	// logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
 
 	// Log routes
 	v1.Get("/logs", func(c *fiber.Ctx) error {
