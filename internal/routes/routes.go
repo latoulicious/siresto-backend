@@ -14,6 +14,11 @@ import (
 	"gorm.io/gorm"
 )
 
+// Health Check Max Response Time
+const responseTimeThreshold = 500 * time.Millisecond
+
+var startTime = time.Now()
+
 func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// QR Code domain
 	qrRepo := &repository.QRCodeRepository{DB: db}
@@ -44,11 +49,30 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("GET / root route registered", logutil.Route("GET", "/"))
 
 	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":    "healthy",
-			"timestamp": time.Now().Format(time.RFC3339),
-			"service":   "siresto-api",
-			"version":   "1.0.0",
+
+		// Simulate a delay by introducing random sleep time
+		// randomDelay := time.Duration(rand.Intn(10000)) * time.Millisecond
+		// time.Sleep(randomDelay) // Random delay between 0 to 1 second
+
+		// Check the response time
+		elapsedTime := time.Since(startTime)
+		if elapsedTime > responseTimeThreshold {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status":        "unhealthy",
+				"timestamp":     time.Now().Format(time.RFC3339),
+				"service":       "siresto-api",
+				"version":       "1.0.0",
+				"message":       "Service is unhealthy due to high response time",
+				"response_time": elapsedTime.String(),
+			})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status":        "healthy",
+			"timestamp":     time.Now().Format(time.RFC3339),
+			"service":       "siresto-api",
+			"version":       "1.0.0",
+			"response_time": elapsedTime.String(),
 		})
 	})
 	logger.LogInfo("GET /health route registered", logutil.Route("GET", "/health"))
