@@ -11,39 +11,32 @@ import (
 )
 
 func main() {
-	// Auto-load .env
-	if err := godotenv.Load(); err != nil {
-		logger.Log.Warn("No .env file found or failed to load, continuing...")
-	}
+	_ = godotenv.Load()
 
-	// Initialize the logger (only if you made InitLogger separate)
-	logger.InitLogger()
-
-	// Log info on start
-	logger.Log.Info("Starting the server...")
-
-	// Connect to database
+	// Connect to DB
 	db, err := config.NewGormDB()
 	if err != nil {
-		logger.Log.WithError(err).Fatal("Failed to connect to database")
+		panic("Failed to connect to DB: " + err.Error())
 	}
-
 	sqlDB, err := db.DB()
 	if err != nil {
-		logger.Log.WithError(err).Fatal("Failed to get sql.DB from GORM")
+		panic("Failed to get sql.DB from GORM: " + err.Error())
 	}
-	defer func() {
-		if err := sqlDB.Close(); err != nil {
-			logger.Log.WithError(err).Warn("Failed to close database connection cleanly")
-		}
-	}()
-	logger.Log.Info("Connected to Vercel Postgres using GORM")
+	defer sqlDB.Close()
 
-	// Initialize Fiber
+	// Init logger persister and logger
+	persister := logger.NewLogServicePersister(db)
+	appLogger := logger.NewLogger(persister)
+
+	// Log example
+	appLogger.LogInfo("Connected to DB successfully", nil)
+	appLogger.LogInfo("Starting the server...", nil)
+
+	// Setup Fiber app
 	app := fiber.New()
 
-	// Setup routes
-	routes.SetupRoutes(app, db)
+	// Setup routes (pass logger)
+	routes.SetupRoutes(app, db, appLogger)
 
 	// Start server
 	port := os.Getenv("PORT")
@@ -51,8 +44,10 @@ func main() {
 		port = "3000"
 	}
 
-	logger.Log.Info("Server starting on port ", port)
+	appLogger.LogInfo("Server listening on port "+port, nil)
 	if err := app.Listen(":" + port); err != nil {
-		logger.Log.WithError(err).Fatal("Failed to start server")
+		appLogger.LogError("Failed to start server", map[string]interface{}{
+			"error": err.Error(),
+		})
 	}
 }

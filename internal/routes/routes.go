@@ -4,28 +4,24 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/handler"
 	"github.com/latoulicious/siresto-backend/internal/repository"
 	"github.com/latoulicious/siresto-backend/internal/service"
-	"github.com/latoulicious/siresto-backend/pkg/logger"
+	"github.com/latoulicious/siresto-backend/pkg/core/logging"
+	"github.com/latoulicious/siresto-backend/pkg/logutil"
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(app *fiber.App, db *gorm.DB) {
-	// Initialize the repository, service, and handler for QR codes
+func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
+	// QR Code domain
 	qrRepo := &repository.QRCodeRepository{DB: db}
 	qrService := &service.QRCodeService{Repo: qrRepo}
 	qrHandler := &handler.QRCodeHandler{Service: qrService}
 
-	// Initialize the repository, service, and handler for logs
-	logRepo := &repository.LogRepository{DB: db}
-	logService := &service.LogService{Repo: logRepo}
-	logHandler := &handler.LogHandler{Service: logService}
-
-	// API v1 group
+	// API v1
 	v1 := app.Group("/api/v1")
 
-	// Generic routes
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"code":    fiber.StatusOK,
@@ -33,9 +29,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 			"message": "SiResto API is running",
 		})
 	})
-	logger.Log.Info("GET / root route registered")
+	logger.LogInfo("GET / root route registered", logutil.Route("GET", "/"))
 
-	// Health check route
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":    "healthy",
@@ -44,28 +39,43 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 			"version":   "1.0.0",
 		})
 	})
-	logger.Log.Info("GET /health route registered")
+	logger.LogInfo("GET /health route registered", logutil.Route("GET", "/health"))
 
-	// QR Domain routes (v1)
 	v1.Get("/qr-codes", qrHandler.ListAllQRCodesHandler)
-	logger.Log.Info("GET /api/v1/qr-codes route registered")
+	logger.LogInfo("GET /api/v1/qr-codes route registered", logutil.Route("GET", "/api/v1/qr-codes"))
 
 	v1.Get("/qr-codes/:id", qrHandler.GetQRCodeByIDHandler)
-	logger.Log.Info("GET /api/v1/qr-codes/:id route registered")
+	logger.LogInfo("GET /api/v1/qr-codes/:id route registered", logutil.Route("GET", "/api/v1/qr-codes/:id"))
 
 	v1.Get("/qr-codes/store/:store_id", qrHandler.ListQRCodesHandler)
-	logger.Log.Info("GET /api/v1/qr-codes/store/:store_id route registered")
+	logger.LogInfo("GET /api/v1/qr-codes/store/:store_id route registered", logutil.Route("GET", "/api/v1/qr-codes/store/:store_id"))
 
 	v1.Post("/qr-codes", qrHandler.CreateQRCodeHandler)
-	logger.Log.Info("POST /api/v1/qr-codes route registered")
+	logger.LogInfo("POST /api/v1/qr-codes route registered", logutil.Route("POST", "/api/v1/qr-codes"))
 
 	v1.Put("/qr-codes/:id", qrHandler.UpdateQRCodeHandler)
-	logger.Log.Info("PUT /api/v1/qr-codes/:id route registered")
+	logger.LogInfo("PUT /api/v1/qr-codes/:id route registered", logutil.Route("PUT", "/api/v1/qr-codes/:id"))
 
 	v1.Delete("/qr-codes/:id", qrHandler.DeleteQRCodeHandler)
-	logger.Log.Info("DELETE /api/v1/qr-codes/:id route registered")
+	logger.LogInfo("DELETE /api/v1/qr-codes/:id route registered", logutil.Route("DELETE", "/api/v1/qr-codes/:id"))
 
-	// Log Domain routes (v1)
-	v1.Post("/logs", logHandler.CreateLogHandler)
-	logger.Log.Info("POST /api/v1/logs route registered")
+	// Log routes
+	// New route to get all logs from the database
+	v1.Get("/logs", func(c *fiber.Ctx) error {
+		var logs []domain.Log // Assuming your Log model is in the db package
+		if err := db.Find(&logs).Error; err != nil {
+			logger.LogError("Failed to fetch logs", logutil.Route("GET", "/api/v1/logs"))
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"status":  "error",
+				"message": "Failed to fetch logs",
+			})
+		}
+
+		// Return the fetched logs
+		return c.JSON(fiber.Map{
+			"status": "success",
+			"logs":   logs,
+		})
+	})
+	logger.LogInfo("GET /api/v1/logs route registered", logutil.Route("GET", "/api/v1/logs"))
 }

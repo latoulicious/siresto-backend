@@ -15,6 +15,12 @@ func RunMigrations(db *gorm.DB) error {
 		return err
 	}
 
+	log.Println("Dropping menus table...")
+	// Drop the menus table if it exists
+	if err := db.Migrator().DropTable(&domain.Menu{}); err != nil {
+		return err
+	}
+
 	log.Println("Running database migrations...")
 	// Auto-migrate all domain models
 	return db.AutoMigrate(
@@ -27,7 +33,6 @@ func RunMigrations(db *gorm.DB) error {
 		&domain.Category{},
 		&domain.Product{},
 		&domain.Variation{},
-		&domain.Menu{},
 
 		// Order processing models
 		&domain.Order{},
