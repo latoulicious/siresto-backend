@@ -91,6 +91,42 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	})
 	logger.LogInfo("GET /health route registered", logutil.Route("GET", "/health"))
 
+	// Auth routes
+	v1.Post("/auth/login", userHandler.LoginUser)
+	logger.LogInfo("POST /api/v1/auth/login route registered", logutil.Route("POST", "/api/v1/auth/login"))
+
+	// User routes
+	v1.Get("/users", userHandler.ListAllUsers)
+	logger.LogInfo("GET /api/v1/users route registered", logutil.Route("GET", "/api/v1/users"))
+
+	v1.Get("/users/:id", userHandler.GetUserByID)
+	logger.LogInfo("GET /api/v1/users/:id route registered", logutil.Route("GET", "/api/v1/users/:id"))
+
+	v1.Post("/users", userHandler.CreateUser)
+	logger.LogInfo("POST /api/v1/users route registered", logutil.Route("POST", "/api/v1/users"))
+
+	v1.Put("/users/:id", userHandler.UpdateUser)
+	logger.LogInfo("PUT /api/v1/users/:id route registered", logutil.Route("PUT", "/api/v1/users/:id"))
+
+	v1.Delete("/users/:id", userHandler.DeleteUser)
+	logger.LogInfo("DELETE /api/v1/users/:id route registered", logutil.Route("DELETE", "/api/v1/users/:id"))
+
+	// Role routes
+	v1.Get("/roles", roleHandler.ListAllRoles)
+	logger.LogInfo("GET /api/v1/roles route registered", logutil.Route("GET", "/api/v1/roles"))
+
+	v1.Get("/roles/:id", roleHandler.GetRoleByID)
+	logger.LogInfo("GET /api/v1/roles/:id route registered", logutil.Route("GET", "/api/v1/roles/:id"))
+
+	v1.Post("/roles", roleHandler.CreateRole)
+	logger.LogInfo("POST /api/v1/roles route registered", logutil.Route("POST", "/api/v1/roles"))
+
+	v1.Put("/roles/:id", roleHandler.UpdateRole)
+	logger.LogInfo("PUT /api/v1/roles/:id route registered", logutil.Route("PUT", "/api/v1/roles/:id"))
+
+	v1.Delete("/roles/:id", roleHandler.DeleteRole)
+	logger.LogInfo("DELETE /api/v1/roles/:id route registered", logutil.Route("DELETE", "/api/v1/roles/:id"))
+
 	// QR Code routes
 	v1.Get("/qr-codes", qrHandler.ListAllQRCodesHandler)
 	logger.LogInfo("GET /api/v1/qr-codes route registered", logutil.Route("GET", "/api/v1/qr-codes"))
@@ -175,38 +211,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	// v1.Delete("/products/:product_id/variations/:id", variationHandler.DeleteVariation)
 	// logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
-
-	// User routes
-	v1.Get("/users", userHandler.ListAllUsers)
-	logger.LogInfo("GET /api/v1/users route registered", logutil.Route("GET", "/api/v1/users"))
-
-	v1.Get("/users/:id", userHandler.GetUserByID)
-	logger.LogInfo("GET /api/v1/users/:id route registered", logutil.Route("GET", "/api/v1/users/:id"))
-
-	v1.Post("/users", userHandler.CreateUser)
-	logger.LogInfo("POST /api/v1/users route registered", logutil.Route("POST", "/api/v1/users"))
-
-	v1.Put("/users/:id", userHandler.UpdateUser)
-	logger.LogInfo("PUT /api/v1/users/:id route registered", logutil.Route("PUT", "/api/v1/users/:id"))
-
-	v1.Delete("/users/:id", userHandler.DeleteUser)
-	logger.LogInfo("DELETE /api/v1/users/:id route registered", logutil.Route("DELETE", "/api/v1/users/:id"))
-
-	// Role routes
-	v1.Get("/roles", roleHandler.ListAllRoles)
-	logger.LogInfo("GET /api/v1/roles route registered", logutil.Route("GET", "/api/v1/roles"))
-
-	v1.Get("/roles/:id", roleHandler.GetRoleByID)
-	logger.LogInfo("GET /api/v1/roles/:id route registered", logutil.Route("GET", "/api/v1/roles/:id"))
-
-	v1.Post("/roles", roleHandler.CreateRole)
-	logger.LogInfo("POST /api/v1/roles route registered", logutil.Route("POST", "/api/v1/roles"))
-
-	v1.Put("/roles/:id", roleHandler.UpdateRole)
-	logger.LogInfo("PUT /api/v1/roles/:id route registered", logutil.Route("PUT", "/api/v1/roles/:id"))
-
-	v1.Delete("/roles/:id", roleHandler.DeleteRole)
-	logger.LogInfo("DELETE /api/v1/roles/:id route registered", logutil.Route("DELETE", "/api/v1/roles/:id"))
 
 	// Log routes
 	v1.Get("/logs", func(c *fiber.Ctx) error {

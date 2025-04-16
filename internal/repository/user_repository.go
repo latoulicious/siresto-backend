@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"gorm.io/gorm"
@@ -49,4 +51,20 @@ func (r *UserRepository) DeleteUser(id uuid.UUID) error {
 		return err
 	}
 	return nil
+}
+
+// LoginUser checks if the user exists and returns the user if found
+func (r *UserRepository) FindByEmail(email string) (*domain.User, error) {
+	var user domain.User
+	err := r.DB.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepository) UpdateLastLogin(userID uuid.UUID, time time.Time) error {
+	return r.DB.Model(&domain.User{}).
+		Where("id = ?", userID).
+		Update("last_login_at", time).Error
 }

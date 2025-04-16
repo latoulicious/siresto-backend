@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -62,4 +63,24 @@ func (s *UserService) DeleteUser(id uuid.UUID) error {
 		return err
 	}
 	return nil
+}
+
+// LoginUser checks if the user exists and returns the user if found
+func (s *UserService) LoginUser(req *validator.LoginRequest) (*domain.User, error) {
+	user, err := s.Repo.FindByEmail(req.Email)
+	if err != nil || user == nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	hashedInput := utils.HashSHA256(req.Password)
+	if user.Password != hashedInput {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Update last login
+	now := time.Now()
+	user.LastLoginAt = &now
+	_ = s.Repo.UpdateLastLogin(user.ID, now) // ignore error for now
+
+	return user, nil
 }

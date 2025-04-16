@@ -90,3 +90,22 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(utils.Success("User deleted successfully", nil))
 }
+
+// LoginHandler handles user login
+func (h *UserHandler) LoginUser(c *fiber.Ctx) error {
+	var req validator.LoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
+	}
+
+	// if err := validator.Validate(req); err != nil {
+	// 	return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
+	// }
+
+	user, err := h.Service.LoginUser(&req)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(utils.Error("Invalid email or password", fiber.StatusUnauthorized))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Login successful", user))
+}
