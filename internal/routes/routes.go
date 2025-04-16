@@ -38,6 +38,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	variationService := &service.VariationService{Repo: variationRepo}
 	variationHandler := &handler.VariationHandler{Service: variationService}
 
+	// User domain
+	userRepo := &repository.UserRepository{DB: db}
+	userService := &service.UserService{Repo: userRepo}
+	userHandler := &handler.UserHandler{Service: userService}
+
 	// API v1
 	v1 := app.Group("/api/v1")
 
@@ -165,6 +170,22 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	// v1.Delete("/products/:product_id/variations/:id", variationHandler.DeleteVariation)
 	// logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
+
+	// User routes
+	v1.Get("/users", userHandler.ListAllUsers)
+	logger.LogInfo("GET /api/v1/users route registered", logutil.Route("GET", "/api/v1/users"))
+
+	v1.Get("/users/:id", userHandler.GetUserByID)
+	logger.LogInfo("GET /api/v1/users/:id route registered", logutil.Route("GET", "/api/v1/users/:id"))
+
+	v1.Post("/users", userHandler.CreateUser)
+	logger.LogInfo("POST /api/v1/users route registered", logutil.Route("POST", "/api/v1/users"))
+
+	v1.Put("/users/:id", userHandler.UpdateUser)
+	logger.LogInfo("PUT /api/v1/users/:id route registered", logutil.Route("PUT", "/api/v1/users/:id"))
+
+	v1.Delete("/users/:id", userHandler.DeleteUser)
+	logger.LogInfo("DELETE /api/v1/users/:id route registered", logutil.Route("DELETE", "/api/v1/users/:id"))
 
 	// Log routes
 	v1.Get("/logs", func(c *fiber.Ctx) error {
