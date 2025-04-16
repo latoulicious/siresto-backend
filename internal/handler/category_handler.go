@@ -6,6 +6,7 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/service"
 	"github.com/latoulicious/siresto-backend/internal/utils"
+	"github.com/latoulicious/siresto-backend/internal/validator"
 )
 
 type CategoryHandler struct {
@@ -47,7 +48,12 @@ func (h *CategoryHandler) CreateCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
 	}
 
-	createdCategory, err := h.Service.CreateCategory(&body) // Capture both the result and error
+	// Validate category before creation
+	if err := validator.ValidateCategory(h.Service.Repo.DB, &body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
+	}
+
+	createdCategory, err := h.Service.CreateCategory(&body)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to create category", fiber.StatusInternalServerError))
 	}
@@ -67,13 +73,16 @@ func (h *CategoryHandler) UpdateCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
 	}
 
-	// Capture both the updated category and error
+	// Validate category before update
+	if err := validator.ValidateCategory(h.Service.Repo.DB, &body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
+	}
+
 	updatedCategory, err := h.Service.UpdateCategory(id, &body)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to update category", fiber.StatusInternalServerError))
 	}
 
-	// Return the updated category
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Category updated successfully", updatedCategory))
 }
 
@@ -82,6 +91,11 @@ func (h *CategoryHandler) DeleteCategory(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest))
+	}
+
+	// Validate category before deletion
+	if err := validator.ValidateCategoryDeletable(h.Service.Repo.DB, id); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
 	}
 
 	if err := h.Service.DeleteCategory(id); err != nil {
