@@ -14,9 +14,9 @@ type Product struct {
 	Description  string      `gorm:"type:text"`
 	ImageURL     string      `gorm:"type:text" json:"image_url"`
 	BasePrice    float64     `gorm:"type:numeric(10,2)" json:"base_price"`
-	IsAvailable  bool        `gorm:"default:true"`
+	IsAvailable  bool        `gorm:"default:true" json:"is_available"`
 	Position     int         `gorm:"default:0"`
-	Variations   []Variation `gorm:"foreignKey:ProductID"`
+	Variations   []Variation `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE"`
 }
 
 // AfterFind is called by GORM after loading the entity from the database

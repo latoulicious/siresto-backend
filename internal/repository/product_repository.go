@@ -30,6 +30,14 @@ func (r *ProductRepository) GetProductByID(id uuid.UUID) (*domain.Product, error
 	return &product, nil
 }
 
+func (r *ProductRepository) LoadProductWithRelations(id uuid.UUID, dest *domain.Product) error {
+	return r.DB.
+		Model(&domain.Product{}).
+		Preload("Category").
+		Preload("Variations").
+		First(dest, "id = ?", id).Error
+}
+
 // CreateProduct inserts a new product into the database
 func (r *ProductRepository) CreateProduct(product *domain.Product) error {
 	return r.DB.Create(product).Error
