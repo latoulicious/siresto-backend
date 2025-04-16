@@ -10,6 +10,8 @@ type VariationService struct {
 	Repo *repository.VariationRepository
 }
 
+//! Global Variation Service
+
 // ListVariations fetches all variations for a product
 func (s *VariationService) ListAllVariations() ([]domain.Variation, error) {
 	return s.Repo.ListAllVariations()
@@ -42,3 +44,5 @@ func (s *VariationService) UpdateVariation(variation *domain.Variation) (*domain
 func (s *VariationService) DeleteVariation(id uuid.UUID) error {
 	return s.Repo.DeleteVariation(id)
 }
+
+// TODO Implement Function for Product Tied Variations

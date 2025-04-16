@@ -10,6 +10,8 @@ type VariationRepository struct {
 	DB *gorm.DB
 }
 
+//! Global Variation Repository
+
 // ListVariations fetches all variations for a product
 func (r *VariationRepository) ListAllVariations() ([]domain.Variation, error) {
 	var variations []domain.Variation
@@ -44,3 +46,5 @@ func (r *VariationRepository) UpdateVariation(variation *domain.Variation) error
 func (r *VariationRepository) DeleteVariation(id uuid.UUID) error {
 	return r.DB.Delete(&domain.Variation{}, id).Error
 }
+
+// TODO Implement Function for Product Tied Variations

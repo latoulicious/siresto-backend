@@ -13,6 +13,8 @@ type VariationHandler struct {
 	Service *service.VariationService
 }
 
+//! Global Variation Handler
+
 // ListVariationsHandler lists all variations for a product
 func (h *VariationHandler) ListAllVariations(c *fiber.Ctx) error {
 	variations, err := h.Service.ListAllVariations()
@@ -127,3 +129,5 @@ func (h *VariationHandler) DeleteVariation(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusNoContent).JSON(utils.Success("Variation deleted successfully", nil))
 }
+
+// TODO Implement Function for Product Tied Variations
