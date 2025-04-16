@@ -11,6 +11,19 @@ func Route(method, path string) map[string]interface{} {
 	}
 }
 
+// MainCall standardizes logs from main package
+func MainCall(action, entity string, extra map[string]interface{}) map[string]interface{} {
+	fields := map[string]interface{}{
+		"source": "main",
+		"action": action,
+		"entity": entity,
+	}
+	for k, v := range extra {
+		fields[k] = v
+	}
+	return fields
+}
+
 // HandlerCall standardizes log entries from HTTP handlers (controllers)
 func HandlerCall(action, entity string, extra map[string]interface{}) map[string]interface{} {
 	fields := map[string]interface{}{

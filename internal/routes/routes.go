@@ -17,8 +17,6 @@ import (
 // Health Check Max Response Time
 const responseTimeThreshold = 500 * time.Millisecond
 
-var startTime = time.Now()
-
 func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// QR Code domain
 	qrRepo := &repository.QRCodeRepository{DB: db}
@@ -54,6 +52,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("GET / root route registered", logutil.Route("GET", "/"))
 
 	app.Get("/health", func(c *fiber.Ctx) error {
+		startTime := time.Now()
 
 		// Simulate a delay by introducing random sleep time
 		// randomDelay := time.Duration(rand.Intn(10000)) * time.Millisecond

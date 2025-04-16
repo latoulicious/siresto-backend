@@ -13,6 +13,7 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/config"
 	"github.com/latoulicious/siresto-backend/internal/routes"
 	"github.com/latoulicious/siresto-backend/pkg/logger"
+	"github.com/latoulicious/siresto-backend/pkg/logutil"
 )
 
 func main() {
@@ -21,10 +22,16 @@ func main() {
 	// Connect to DB
 	db, err := config.NewGormDB()
 	if err != nil {
+		logger.NewLogger(nil).LogError("Failed to connect to DB", logutil.MainCall("connect", "database", map[string]interface{}{
+			"error": err.Error(),
+		}))
 		panic("Failed to connect to DB: " + err.Error())
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
+		logger.NewLogger(nil).LogError("Failed to get sql.DB from GORM", logutil.MainCall("init", "database", map[string]interface{}{
+			"error": err.Error(),
+		}))
 		panic("Failed to get sql.DB from GORM: " + err.Error())
 	}
 	defer sqlDB.Close()
@@ -32,6 +39,8 @@ func main() {
 	// Init logger persister and logger
 	persister := logger.NewLogServicePersister(db)
 	appLogger := logger.NewLogger(persister)
+
+	appLogger.LogInfo("Connected to DB successfully", logutil.MainCall("connect", "database", nil))
 
 	// Setup Fiber app
 	app := fiber.New()
@@ -41,6 +50,10 @@ func main() {
 	if allowedOrigins == "" {
 		allowedOrigins = "http://localhost:3000"
 	}
+
+	appLogger.LogInfo("CORS initialized", logutil.MainCall("init", "cors", map[string]interface{}{
+		"allowed_origins": allowedOrigins,
+	}))
 
 	// Setup CORS middleware
 	app.Use(cors.New(cors.Config{
@@ -61,11 +74,13 @@ func main() {
 
 	// Start Fiber in goroutine
 	go func() {
-		appLogger.LogInfo("Server listening on port "+port, nil)
+		appLogger.LogInfo("Server starting...", logutil.MainCall("start", "server", map[string]interface{}{
+			"port": port,
+		}))
 		if err := app.Listen(":" + port); err != nil {
-			appLogger.LogError("Failed to start server", map[string]interface{}{
+			appLogger.LogError("Failed to start server", logutil.MainCall("start", "server", map[string]interface{}{
 				"error": err.Error(),
-			})
+			}))
 			os.Exit(1)
 		}
 	}()
@@ -75,16 +90,16 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 
-	appLogger.LogInfo("Gracefully shutting down server...", nil)
+	appLogger.LogInfo("Gracefully shutting down server...", logutil.MainCall("shutdown", "server", nil))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := app.ShutdownWithContext(ctx); err != nil {
-		appLogger.LogError("Shutdown error", map[string]interface{}{
+		appLogger.LogError("Shutdown error", logutil.MainCall("shutdown", "server", map[string]interface{}{
 			"error": err.Error(),
-		})
+		}))
 	} else {
-		appLogger.LogInfo("Server shut down successfully", nil)
+		appLogger.LogInfo("Server shut down successfully", logutil.MainCall("shutdown", "server", nil))
 	}
 }
