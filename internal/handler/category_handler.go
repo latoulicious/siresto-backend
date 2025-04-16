@@ -13,8 +13,11 @@ type CategoryHandler struct {
 }
 
 // GetAllHandler retrieves all categories
-func (h *CategoryHandler) ListAllCategories(c *fiber.Ctx) error {
-	categories, err := h.Service.ListAllCategories()
+func (h CategoryHandler) ListAllCategories(c *fiber.Ctx) error {
+	// Parse query parameter for product inclusion
+	includeProducts := c.Query("include_products") == "true"
+
+	categories, err := h.Service.ListAllCategories(includeProducts)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve categories", fiber.StatusInternalServerError))
 	}
@@ -28,7 +31,8 @@ func (h *CategoryHandler) GetCategoryByID(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest))
 	}
 
-	category, err := h.Service.GetCategoryByID(id)
+	includeProducts := c.Query("include_products") == "true"
+	category, err := h.Service.GetCategoryByID(id, includeProducts)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Category not found", fiber.StatusNotFound))
 	}

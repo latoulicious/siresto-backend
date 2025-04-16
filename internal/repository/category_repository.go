@@ -10,24 +10,42 @@ type CategoryRepository struct {
 	DB *gorm.DB
 }
 
-// FindAll fetches all categories from the database
 func (r *CategoryRepository) ListAllCategories() ([]domain.Category, error) {
 	var categories []domain.Category
-	err := r.DB.Find(&categories).Error
+	err := r.DB.Preload("Products").Find(&categories).Error
 	if err != nil {
 		return nil, err
 	}
 	return categories, nil
 }
 
-// FindByID fetches a category by its ID
-func (r *CategoryRepository) GetCategoryByID(id uuid.UUID) (*domain.Category, error) {
+func (r CategoryRepository) GetCategoryByID(id uuid.UUID) (*domain.Category, error) {
 	var category domain.Category
-	err := r.DB.Where("id = ?", id).First(&category).Error
+	err := r.DB.Preload("Products").Where("id = ?", id).First(&category).Error
 	if err != nil {
 		return nil, err
 	}
 	return &category, nil
+}
+
+// Fetch single category by ID with products
+func (r *CategoryRepository) GetCategoryByIDWithProducts(id uuid.UUID) (*domain.Category, error) {
+	var category domain.Category
+	err := r.DB.
+		Model(&domain.Category{}).
+		Preload("Product").
+		First(&category, "id = ?", id).Error
+	return &category, err
+}
+
+// Fetch all categories with products
+func (r *CategoryRepository) ListAllCategoriesWithProducts() ([]domain.Category, error) {
+	var categories []domain.Category
+	err := r.DB.
+		Model(&domain.Category{}).
+		Preload("Product").
+		Find(&categories).Error
+	return categories, err
 }
 
 // Create inserts a new category into the database

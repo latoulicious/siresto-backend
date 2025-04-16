@@ -10,13 +10,17 @@ type CategoryService struct {
 	Repo *repository.CategoryRepository
 }
 
-// GetAll fetches all categories
-func (s *CategoryService) ListAllCategories() ([]domain.Category, error) {
+func (s *CategoryService) ListAllCategories(includeProducts bool) ([]domain.Category, error) {
+	if includeProducts {
+		return s.Repo.ListAllCategoriesWithProducts()
+	}
 	return s.Repo.ListAllCategories()
 }
 
-// GetByID fetches a category by its ID
-func (s *CategoryService) GetCategoryByID(id uuid.UUID) (*domain.Category, error) {
+func (s *CategoryService) GetCategoryByID(id uuid.UUID, includeProducts bool) (*domain.Category, error) {
+	if includeProducts {
+		return s.Repo.GetCategoryByIDWithProducts(id)
+	}
 	return s.Repo.GetCategoryByID(id)
 }
 
