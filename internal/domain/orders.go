@@ -16,8 +16,6 @@ const (
 
 type Order struct {
 	ID            uuid.UUID   `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
-	UserID        *uuid.UUID  `gorm:"type:uuid"`
-	User          *User       `gorm:"foreignKey:UserID"`
 	CustomerName  string      `gorm:"type:text;not null"`
 	CustomerPhone string      `gorm:"type:text;not null"`
 	TableNumber   int         `gorm:"type:int;not null"`

@@ -8,7 +8,6 @@ import (
 )
 
 type OrderRequest struct {
-	UserID        string  `json:"user_id"`
 	CustomerName  string  `json:"customer_name"`
 	CustomerPhone string  `json:"customer_phone"`
 	TableNumber   int     `json:"table_number"`
@@ -18,14 +17,10 @@ type OrderRequest struct {
 }
 
 type OrderDetailRequest struct {
-	ProductID     string  `json:"product_id"`
-	VariationID   string  `json:"variation_id"`
-	ProductName   string  `json:"product_name"`
-	VariationName string  `json:"variation_name"`
-	UnitPrice     float64 `json:"unit_price"`
-	Quantity      int     `json:"quantity"`
-	TotalPrice    float64 `json:"total_price"`
-	Note          string  `json:"note"`
+	ProductID   string `json:"product_id"`
+	VariationID string `json:"variation_id,omitempty"` // Optional variation
+	Quantity    int    `json:"quantity"`
+	Note        string `json:"note,omitempty"` // Optional note
 }
 
 type CreateOrderRequest struct {
@@ -60,10 +55,8 @@ func (handler *OrderHandler) CreateOrder(c *fiber.Ctx) error {
 
 // Map request model to domain model
 func mapOrderRequestToDomain(req OrderRequest) *domain.Order {
-	userID, _ := uuid.Parse(req.UserID) // Handle error in production code
 
 	return &domain.Order{
-		UserID:        &userID,
 		CustomerName:  req.CustomerName,
 		CustomerPhone: req.CustomerPhone,
 		TableNumber:   req.TableNumber,
@@ -82,14 +75,10 @@ func mapOrderDetailsRequestToDomain(reqs []OrderDetailRequest) []domain.OrderDet
 		variationID, _ := uuid.Parse(req.VariationID) // Handle error in production
 
 		details[i] = domain.OrderDetail{
-			ProductID:     &productID,
-			VariationID:   &variationID,
-			ProductName:   req.ProductName,
-			VariationName: req.VariationName,
-			UnitPrice:     req.UnitPrice,
-			Quantity:      req.Quantity,
-			TotalPrice:    req.TotalPrice,
-			Note:          req.Note,
+			ProductID:   &productID,
+			VariationID: &variationID,
+			Quantity:    req.Quantity,
+			Note:        req.Note,
 		}
 	}
 

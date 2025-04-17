@@ -13,7 +13,7 @@ type OrderService struct {
 
 func (service *OrderService) CreateOrder(order *domain.Order, orderDetails []domain.OrderDetail) (*domain.Order, error) {
 	// Perform business validations
-	if order.UserID == nil || order.CustomerName == "" || order.CustomerPhone == "" {
+	if order.CustomerName == "" || order.CustomerPhone == "" {
 		return nil, errors.New("missing required order fields")
 	}
 
