@@ -15,5 +15,4 @@ type QRCode struct {
 	MenuURL     string     `gorm:"type:text"`
 	ExpiresAt   *time.Time `gorm:"type:timestamp"`
 	Image       string     `gorm:"type:text"`
-	Orders      []Order    `gorm:"foreignKey:QRID"`
 }

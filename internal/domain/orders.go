@@ -20,10 +20,9 @@ type Order struct {
 	User          *User       `gorm:"foreignKey:UserID"`
 	CustomerName  string      `gorm:"type:text;not null"`
 	CustomerPhone string      `gorm:"type:text;not null"`
-	QRID          *uuid.UUID  `gorm:"type:uuid"`
-	QRCode        *QRCode     `gorm:"foreignKey:QRID"`
+	TableNumber   int         `gorm:"type:int;not null"`
 	Status        OrderStatus `gorm:"type:text;not null"`
-	TotalAmount   float64     `gorm:"type:numeric(10,2);default:0"`
+	TotalAmount   float64     `gorm:"type:numeric(10,2);default:0" json:"total_amount"`
 	Notes         string      `gorm:"type:text"`
 	CreatedAt     time.Time   `gorm:"default:now()"`
 	PaidAt        *time.Time

@@ -10,6 +10,7 @@ type OrderDetail struct {
 	Order         *Order     `gorm:"foreignKey:OrderID"`
 	ProductName   string     `gorm:"type:text;not null"`
 	VariationName string     `gorm:"type:text"`
+	Note          string     `gorm:"type:text"`
 	UnitPrice     float64    `gorm:"type:numeric(10,2);not null"`
 	Quantity      int        `gorm:"not null"`
 	TotalPrice    float64    `gorm:"type:numeric(10,2);not null"`
