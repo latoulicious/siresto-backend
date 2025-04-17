@@ -48,6 +48,14 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	roleService := &service.RoleService{Repo: roleRepo}
 	roleHandler := &handler.RoleHandler{Service: roleService}
 
+	// Order domain
+	orderRepo := &repository.OrderRepository{DB: db}
+	orderService := &service.OrderService{Repo: orderRepo}
+	orderHandler := &handler.OrderHandler{OrderService: orderService}
+	orderDetailRepo := &repository.OrderDetailRepository{DB: db}
+	orderDetailService := &service.OrderDetailService{Repo: orderDetailRepo}
+	orderDetailHandler := &handler.OrderDetailHandler{OrderDetailService: orderDetailService}
+
 	// API v1
 	v1 := app.Group("/api/v1")
 
@@ -211,6 +219,38 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	// v1.Delete("/products/:product_id/variations/:id", variationHandler.DeleteVariation)
 	// logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
+
+	// Order routes
+	// v1.Get("/orders", orderHandler.ListAllOrders)
+	// logger.LogInfo("GET /api/v1/orders route registered", logutil.Route("GET", "/api/v1/orders"))
+
+	// v1.Get("/orders/:id", orderHandler.GetOrderByID)
+	// logger.LogInfo("GET /api/v1/orders/:id route registered", logutil.Route("GET", "/api/v1/orders/:id"))
+
+	v1.Post("/orders", orderHandler.CreateOrder)
+	logger.LogInfo("POST /api/v1/orders route registered", logutil.Route("POST", "/api/v1/orders"))
+
+	// v1.Put("/orders/:id", orderHandler.UpdateOrder)
+	// logger.LogInfo("PUT /api/v1/orders/:id route registered", logutil.Route("PUT", "/api/v1/orders/:id"))
+
+	// v1.Delete("/orders/:id", orderHandler.DeleteOrder)
+	// logger.LogInfo("DELETE /api/v1/orders/:id route registered", logutil.Route("DELETE", "/api/v1/orders/:id"))
+
+	// Order Detail routes
+	// v1.Get("/order-details", orderDetailHandler.ListAllOrderDetails)
+	// logger.LogInfo("GET /api/v1/order-details route registered", logutil.Route("GET", "/api/v1/order-details"))
+
+	// v1.Get("/order-details/:id", orderDetailHandler.GetOrderDetailByID)
+	// logger.LogInfo("GET /api/v1/order-details/:id route registered", logutil.Route("GET", "/api/v1/order-details/:id"))
+
+	v1.Post("/order-details", orderDetailHandler.CreateOrderDetails)
+	logger.LogInfo("POST /api/v1/order-details route registered", logutil.Route("POST", "/api/v1/order-details"))
+
+	// v1.Put("/order-details/:id", orderDetailHandler.UpdateOrderDetail)
+	// logger.LogInfo("PUT /api/v1/order-details/:id route registered", logutil.Route("PUT", "/api/v1/order-details/:id"))
+
+	// v1.Delete("/order-details/:id", orderDetailHandler.DeleteOrderDetail)
+	// logger.LogInfo("DELETE /api/v1/order-details/:id route registered", logutil.Route("DELETE", "/api/v1/order-details/:id"))
 
 	// Log routes
 	v1.Get("/logs", func(c *fiber.Ctx) error {

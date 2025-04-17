@@ -15,7 +15,7 @@ func RunMigrations(db *gorm.DB) error {
 		return err
 	}
 
-	log.Println("Dropping menus table...")
+	// log.Println("Dropping menus table...")
 	// Drop the unused table if it exists
 	// if err := db.Migrator().DropTable(&domain.Menu{}); err != nil {
 	// 	return err
@@ -27,7 +27,6 @@ func RunMigrations(db *gorm.DB) error {
 		// User & authorization models
 		&domain.Role{},
 		&domain.User{},
-		&domain.Customer{},
 
 		// Restaurant models
 		&domain.Category{},

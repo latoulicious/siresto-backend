@@ -17,24 +17,24 @@ func main() {
 
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
-		log.Println("⚠️ No .env file found, using environment variables")
+		log.Println("No .env file found, using environment variables")
 	}
 
 	// Connect to database
 	db, err := config.NewGormDB()
 	if err != nil {
-		log.Fatalf("❌ Failed to connect to database: %v", err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("❌ Failed to get sql.DB instance: %v", err)
+		log.Fatalf("Failed to get sql.DB instance: %v", err)
 	}
 	defer sqlDB.Close()
-	log.Println("✅ Connected to database")
+	log.Println("Connected to database")
 
 	// Handle reset if requested
 	if *resetFlag {
-		log.Println("🔄 Dropping existing tables...")
+		log.Println("Dropping existing tables...")
 		// Enable cascade to avoid foreign key issues
 		db.Exec("SET session_replication_role = 'replica';")
 
@@ -53,25 +53,25 @@ func main() {
 		db.Exec("SET session_replication_role = 'origin';")
 
 		if err != nil {
-			log.Fatalf("❌ Failed to drop tables: %v", err)
+			log.Fatalf("Failed to drop tables: %v", err)
 		}
-		log.Println("✅ Tables dropped successfully")
+		log.Println("Tables dropped successfully")
 	}
 
 	// Run migrations
-	log.Println("🔄 Running migrations...")
+	log.Println("Running migrations...")
 	if err := migrations.RunMigrations(db); err != nil {
-		log.Fatalf("❌ Migration failed: %v", err)
+		log.Fatalf("Migration failed: %v", err)
 	}
-	log.Println("✅ Migrations completed successfully")
+	log.Println("Migrations completed successfully")
 
 	// Seed data if requested
 	if *seedFlag {
-		log.Println("🌱 Seeding initial data...")
+		log.Println("Seeding initial data...")
 		if err := migrations.SeedData(db); err != nil {
-			log.Fatalf("❌ Data seeding failed: %v", err)
+			log.Fatalf("Data seeding failed: %v", err)
 		}
-		log.Println("✅ Data seeding completed successfully")
+		log.Println("Data seeding completed successfully")
 	}
 
 	log.Println("✨ Migration process completed")
