@@ -12,6 +12,7 @@ type CategoryRepository struct {
 
 func (r *CategoryRepository) ListAllCategories() ([]domain.Category, error) {
 	var categories []domain.Category
+	// Preload products if needed
 	err := r.DB.Preload("Products").Find(&categories).Error
 	if err != nil {
 		return nil, err
@@ -28,6 +29,18 @@ func (r CategoryRepository) GetCategoryByID(id uuid.UUID) (*domain.Category, err
 	return &category, nil
 }
 
+// Fetch all categories with products
+func (r *CategoryRepository) ListAllCategoriesWithProducts() ([]domain.Category, error) {
+	var categories []domain.Category
+	// Preload products with their variations and other needed relationships
+	err := r.DB.
+		Model(&domain.Category{}).
+		Preload("Products").
+		Preload("Products.Variations"). // If you want variations with products
+		Find(&categories).Error
+	return categories, err
+}
+
 // Fetch single category by ID with products
 func (r *CategoryRepository) GetCategoryByIDWithProducts(id uuid.UUID) (*domain.Category, error) {
 	var category domain.Category
@@ -36,16 +49,6 @@ func (r *CategoryRepository) GetCategoryByIDWithProducts(id uuid.UUID) (*domain.
 		Preload("Product").
 		First(&category, "id = ?", id).Error
 	return &category, err
-}
-
-// Fetch all categories with products
-func (r *CategoryRepository) ListAllCategoriesWithProducts() ([]domain.Category, error) {
-	var categories []domain.Category
-	err := r.DB.
-		Model(&domain.Category{}).
-		Preload("Product").
-		Find(&categories).Error
-	return categories, err
 }
 
 // Create inserts a new category into the database

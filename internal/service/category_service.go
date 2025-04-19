@@ -5,6 +5,7 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/repository"
 	"github.com/latoulicious/siresto-backend/internal/validator"
+	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
 type CategoryService struct {
@@ -13,8 +14,10 @@ type CategoryService struct {
 
 func (s *CategoryService) ListAllCategories(includeProducts bool) ([]domain.Category, error) {
 	if includeProducts {
+		// Load categories with products included
 		return s.Repo.ListAllCategoriesWithProducts()
 	}
+	// Load categories without products
 	return s.Repo.ListAllCategories()
 }
 
@@ -45,19 +48,28 @@ func (s *CategoryService) CreateCategory(category *domain.Category) (*domain.Cat
 }
 
 // Update updates an existing category
-func (s *CategoryService) UpdateCategory(id uuid.UUID, update *domain.Category) (*domain.Category, error) {
-	// Validate category before update
-	if err := validator.ValidateCategory(s.Repo.DB, update); err != nil {
-		return nil, err
-	}
-
+func (s *CategoryService) UpdateCategory(id uuid.UUID, update *dto.UpdateCategoryRequest) (*domain.Category, error) {
 	existing, err := s.Repo.GetCategoryByID(id)
 	if err != nil {
 		return nil, err
 	}
-	existing.Name = update.Name
-	existing.IsActive = update.IsActive
-	existing.Position = update.Position
+
+	if update.Name != nil {
+		existing.Name = *update.Name
+	}
+	if update.IsActive != nil {
+		existing.IsActive = *update.IsActive
+	}
+	if update.Position != nil {
+		existing.Position = *update.Position
+	}
+
+	// Optional: Re-validate only if certain fields are updated
+	if update.Name != nil {
+		if err := validator.ValidateCategory(s.Repo.DB, existing); err != nil {
+			return nil, err
+		}
+	}
 
 	if err := s.Repo.UpdateCategory(existing); err != nil {
 		return nil, err

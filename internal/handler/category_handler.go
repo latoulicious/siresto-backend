@@ -7,14 +7,15 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/service"
 	"github.com/latoulicious/siresto-backend/internal/utils"
 	"github.com/latoulicious/siresto-backend/internal/validator"
+	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
 type CategoryHandler struct {
 	Service *service.CategoryService
 }
 
-// GetAllHandler retrieves all categories
-func (h CategoryHandler) ListAllCategories(c *fiber.Ctx) error {
+// ListAllCategories retrieves all categories, optionally including products
+func (h *CategoryHandler) ListAllCategories(c *fiber.Ctx) error {
 	// Parse query parameter for product inclusion
 	includeProducts := c.Query("include_products") == "true"
 
@@ -22,7 +23,14 @@ func (h CategoryHandler) ListAllCategories(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve categories", fiber.StatusInternalServerError))
 	}
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Categories retrieved successfully", categories))
+
+	// Map the domain categories to DTO response
+	var categoryResponses []dto.CategoryResponse
+	for _, category := range categories {
+		categoryResponses = append(categoryResponses, *dto.ToCategoryResponse(&category))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Categories retrieved successfully", categoryResponses))
 }
 
 // GetByIDHandler retrieves a category by ID
@@ -38,7 +46,7 @@ func (h *CategoryHandler) GetCategoryByID(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Category not found", fiber.StatusNotFound))
 	}
 
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Category found", category))
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Category retrieved successfully", category))
 }
 
 // CreateHandler creates a new category
@@ -48,7 +56,7 @@ func (h *CategoryHandler) CreateCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
 	}
 
-	// Validate category before creation
+	// Validate input
 	if err := validator.ValidateCategory(h.Service.Repo.DB, &body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
 	}
@@ -58,7 +66,10 @@ func (h *CategoryHandler) CreateCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to create category", fiber.StatusInternalServerError))
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(utils.Success("Category created successfully", createdCategory))
+	// Convert domain model to DTO response
+	response := dto.ToCategoryResponse(createdCategory)
+
+	return c.Status(fiber.StatusCreated).JSON(utils.Success("Category created successfully", response))
 }
 
 // UpdateHandler updates an existing category
@@ -68,19 +79,14 @@ func (h *CategoryHandler) UpdateCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest))
 	}
 
-	var body domain.Category
+	var body dto.UpdateCategoryRequest
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
 	}
 
-	// Validate category before update
-	if err := validator.ValidateCategory(h.Service.Repo.DB, &body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
-	}
-
 	updatedCategory, err := h.Service.UpdateCategory(id, &body)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to update category", fiber.StatusInternalServerError))
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Category updated successfully", updatedCategory))
