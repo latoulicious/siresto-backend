@@ -26,7 +26,7 @@ func (r *ProductRepository) ListAllProducts() ([]domain.Product, error) {
 // GetProductByID fetches a product by its ID
 func (r *ProductRepository) GetProductByID(id uuid.UUID) (*domain.Product, error) {
 	var product domain.Product
-	err := r.DB.Preload("Category").Where("id = ?", id).First(&product).Error
+	err := r.DB.Preload("Category").Preload("Variations").Where("id = ?", id).First(&product).Error
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,9 @@ type CategoryRepository struct {
 func (r *CategoryRepository) ListAllCategories() ([]domain.Category, error) {
 	var categories []domain.Category
 	// Preload products if needed
-	err := r.DB.Preload("Products").Find(&categories).Error
+	err := r.DB.
+		Preload("Products.Variations").
+		Find(&categories).Error
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +24,7 @@ func (r *CategoryRepository) ListAllCategories() ([]domain.Category, error) {
 
 func (r CategoryRepository) GetCategoryByID(id uuid.UUID) (*domain.Category, error) {
 	var category domain.Category
-	err := r.DB.Preload("Products").Where("id = ?", id).First(&category).Error
+	err := r.DB.Preload("Products.Variations").Where("id = ?", id).First(&category).Error
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +48,7 @@ func (r *CategoryRepository) GetCategoryByIDWithProducts(id uuid.UUID) (*domain.
 	var category domain.Category
 	err := r.DB.
 		Model(&domain.Category{}).
-		Preload("Product").
+		Preload("Products.Variations").
 		First(&category, "id = ?", id).Error
 	return &category, err
 }

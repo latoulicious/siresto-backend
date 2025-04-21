@@ -40,13 +40,13 @@ func (h *CategoryHandler) GetCategoryByID(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest))
 	}
 
-	includeProducts := c.Query("include_products") == "true"
-	category, err := h.Service.GetCategoryByID(id, includeProducts)
+	category, err := h.Service.GetCategoryByID(id, true) // always preload products
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Category not found", fiber.StatusNotFound))
 	}
 
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Category retrieved successfully", category))
+	response := dto.ToCategoryResponse(category)
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Category retrieved successfully", response))
 }
 
 // CreateHandler creates a new category

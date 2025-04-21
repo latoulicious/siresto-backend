@@ -34,11 +34,14 @@ func (h *ProductHandler) GetProductByID(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid product ID", fiber.StatusBadRequest))
 	}
+
 	product, err := h.Service.GetProductByID(id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Product not found", fiber.StatusNotFound))
 	}
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Product found", product))
+
+	response := dto.ToProductResponse(product)
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Product found", response))
 }
 
 // CreateProductHandler creates a new product
