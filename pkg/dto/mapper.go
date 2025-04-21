@@ -12,7 +12,6 @@ func ToCategoryResponse(c *domain.Category) *CategoryResponse {
 		Name:     c.Name,
 		IsActive: c.IsActive,
 		Position: c.Position,
-		// CategoryName: c.CategoryName,
 	}
 
 	for _, product := range c.Products {
@@ -31,7 +30,6 @@ func ToProductSummary(p *domain.Product) ProductSummary {
 		BasePrice:   p.BasePrice,
 		IsAvailable: p.IsAvailable,
 		Position:    p.Position,
-		// CategoryName: p.CategoryName,
 	}
 
 	for _, v := range p.Variations {
@@ -82,7 +80,6 @@ func ToProductResponse(p *domain.Product) *ProductResponse {
 	for _, v := range p.Variations {
 		product.Variations = append(product.Variations, ToVariationSummary(&v))
 	}
-
 	return product
 }
 
@@ -108,6 +105,50 @@ func ToUpdateProductRequest(p *domain.Product) *UpdateProductRequest {
 		Position:    &p.Position,
 		CategoryID:  p.CategoryID,
 	}
+}
+
+// Mapping DTO back to &Domain
+
+func ToProductDomainFromCreate(request *CreateProductRequest) *domain.Product {
+	return &domain.Product{
+		Name:        request.Name,
+		Description: request.Description,
+		ImageURL:    request.ImageURL,
+		BasePrice:   request.BasePrice,
+		IsAvailable: request.IsAvailable,
+		Position:    request.Position,
+		CategoryID:  request.CategoryID,
+	}
+}
+
+func ToProductDomainFromUpdate(request *UpdateProductRequest, existingProduct *domain.Product) *domain.Product {
+	// Create a copy of the existing product to preserve unchanged values
+	updatedProduct := *existingProduct
+
+	// Only update non-nil values
+	if request.Name != nil {
+		updatedProduct.Name = *request.Name
+	}
+	if request.Description != nil {
+		updatedProduct.Description = *request.Description
+	}
+	if request.ImageURL != nil {
+		updatedProduct.ImageURL = *request.ImageURL
+	}
+	if request.BasePrice != nil {
+		updatedProduct.BasePrice = *request.BasePrice
+	}
+	if request.IsAvailable != nil {
+		updatedProduct.IsAvailable = *request.IsAvailable
+	}
+	if request.Position != nil {
+		updatedProduct.Position = *request.Position
+	}
+	if request.CategoryID != nil {
+		updatedProduct.CategoryID = request.CategoryID
+	}
+
+	return &updatedProduct
 }
 
 // Variation DTO

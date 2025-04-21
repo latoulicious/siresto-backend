@@ -3,10 +3,10 @@ package handler
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/service"
 	"github.com/latoulicious/siresto-backend/internal/utils"
 	"github.com/latoulicious/siresto-backend/internal/validator"
+	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
 type ProductHandler struct {
@@ -19,7 +19,13 @@ func (h *ProductHandler) ListAllProducts(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve products", fiber.StatusInternalServerError))
 	}
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Products retrieved successfully", products))
+
+	var responses []dto.ProductResponse
+	for _, product := range products {
+		responses = append(responses, *dto.ToProductResponse(&product))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Products retrieved successfully", responses))
 }
 
 // GetProductByIDHandler retrieves a product by ID
@@ -37,41 +43,72 @@ func (h *ProductHandler) GetProductByID(c *fiber.Ctx) error {
 
 // CreateProductHandler creates a new product
 func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
-	var body domain.Product
-	if err := validator.ValidateProduct(h.Service.Repo.DB, &body); err != nil {
+	// Use the CreateProductRequest DTO to parse the request body
+	var body dto.CreateProductRequest
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
+	}
+
+	// Map DTO to domain model
+	product := dto.ToProductDomainFromCreate(&body)
+
+	// Validate the domain model (since we expect CategoryID and other fields to be in PascalCase inside the domain)
+	if err := validator.ValidateProduct(h.Service.Repo.DB, product); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Validation failed: "+err.Error(), fiber.StatusBadRequest))
 	}
 
-	createdProduct, err := h.Service.CreateProduct(&body)
+	// Create the product (interact with the service layer)
+	createdProduct, err := h.Service.CreateProduct(product)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to create product: "+err.Error(), fiber.StatusInternalServerError))
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(utils.Success("Product created successfully", createdProduct))
+	// Map the domain model back to a DTO for the response (snake_case for frontend)
+	response := dto.ToProductResponse(createdProduct)
+
+	// Return the successful response with the product details
+	return c.Status(fiber.StatusCreated).JSON(utils.Success("Product created successfully", response))
 }
 
 // UpdateProductHandler updates an existing product
 func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
+	// Parse the product ID from the URL parameter
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid product ID", fiber.StatusBadRequest))
 	}
 
-	var body domain.Product
+	// Parse the request body into the UpdateProductRequest DTO
+	var body dto.UpdateProductRequest
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
 	}
 
-	if err := validator.ValidateProductForUpdate(h.Service.Repo.DB, &body); err != nil {
+	// Retrieve the existing product from the database to preserve unchanged fields
+	existingProduct, err := h.Service.GetProductByID(id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Product not found", fiber.StatusNotFound))
+	}
+
+	// Map the request body to the domain model, passing the existing product to preserve unchanged fields
+	updatedProduct := dto.ToProductDomainFromUpdate(&body, existingProduct)
+
+	// Validate the updated product (we can skip validation for `nil` values to support partial updates)
+	if err := validator.ValidateProductForUpdate(h.Service.Repo.DB, updatedProduct); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Validation failed: "+err.Error(), fiber.StatusBadRequest))
 	}
 
-	updatedProduct, err := h.Service.UpdateProduct(id, &body)
+	// Perform the update operation in the service layer
+	updatedProduct, err = h.Service.UpdateProduct(id, updatedProduct)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to update product", fiber.StatusInternalServerError))
 	}
 
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Product updated successfully", updatedProduct))
+	// Map the updated product to a response DTO for frontend consumption (e.g., snake_case)
+	response := dto.ToProductResponse(updatedProduct)
+
+	// Return the updated product in the response
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Product updated successfully", response))
 }
 
 // DeleteProductHandler removes a product by ID

@@ -19,24 +19,22 @@ type UpdateCategoryRequest struct {
 
 // --- Response DTOs ---
 type CategoryResponse struct {
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	IsActive bool      `json:"is_active"`
-	Position int       `json:"position"`
-	// CategoryName string           `json:"category_name"`
+	ID       uuid.UUID        `json:"id"`
+	Name     string           `json:"name"`
+	IsActive bool             `json:"is_active"`
+	Position int              `json:"position"`
 	Products []ProductSummary `json:"products,omitempty"`
 }
 
 type ProductSummary struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	ImageURL    string    `json:"image_url"`
-	BasePrice   float64   `json:"base_price"`
-	IsAvailable bool      `json:"is_available"`
-	Position    int       `json:"position"`
-	// CategoryName string             `json:"category_name"`
-	Variations []VariationSummary `json:"variations,omitempty"`
+	ID          uuid.UUID          `json:"id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	ImageURL    string             `json:"image_url"`
+	BasePrice   float64            `json:"base_price"`
+	IsAvailable bool               `json:"is_available"`
+	Position    int                `json:"position"`
+	Variations  []VariationSummary `json:"variations,omitempty"`
 }
 
 type VariationSummary struct {

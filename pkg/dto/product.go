@@ -8,7 +8,7 @@ import (
 type CreateProductRequest struct {
 	Name        string                   `json:"name" binding:"required"`
 	Description string                   `json:"description" binding:"required"`
-	ImageURL    string                   `json:"image_url" binding:"required"`
+	ImageURL    string                   `json:"image_url" binding:"required"` // FIX: Proper JSON binding
 	BasePrice   float64                  `json:"base_price" binding:"required"`
 	IsAvailable bool                     `json:"is_available" binding:"required"`
 	Position    int                      `json:"position" binding:"required"`
@@ -30,13 +30,13 @@ type UpdateProductRequest struct {
 // --- Response DTOs ---
 type ProductResponse struct {
 	ID           uuid.UUID          `json:"id"`
+	CategoryID   *uuid.UUID         `json:"category_id"`
+	CategoryName string             `json:"category_name"`
 	Name         string             `json:"name"`
 	Description  string             `json:"description"`
 	ImageURL     string             `json:"image_url"`
 	BasePrice    float64            `json:"base_price"`
 	IsAvailable  bool               `json:"is_available"`
 	Position     int                `json:"position"`
-	CategoryID   *uuid.UUID         `json:"category_id"`
-	CategoryName string             `json:"category_name"`
 	Variations   []VariationSummary `json:"variations,omitempty"`
 }
