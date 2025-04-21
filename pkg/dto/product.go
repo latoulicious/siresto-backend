@@ -17,14 +17,15 @@ type CreateProductRequest struct {
 }
 
 type UpdateProductRequest struct {
-	Name        *string                  `json:"name,omitempty"`
-	Description *string                  `json:"description,omitempty"`
-	ImageURL    *string                  `json:"image_url,omitempty"`
-	BasePrice   *float64                 `json:"base_price,omitempty"`
-	IsAvailable *bool                    `json:"is_available,omitempty"`
-	Position    *int                     `json:"position,omitempty"`
-	CategoryID  *uuid.UUID               `json:"category_id,omitempty"`
-	Variations  []UpdateVariationRequest `json:"variations,omitempty"`
+	Name                  *string                  `json:"name,omitempty"`
+	Description           *string                  `json:"description,omitempty"`
+	ImageURL              *string                  `json:"image_url,omitempty"`
+	BasePrice             *float64                 `json:"base_price,omitempty"`
+	IsAvailable           *bool                    `json:"is_available,omitempty"`
+	Position              *int                     `json:"position,omitempty"`
+	CategoryID            *uuid.UUID               `json:"category_id,omitempty"`
+	Variations            []UpdateVariationRequest `json:"variations,omitempty"`
+	RemoveOtherVariations *bool                    `json:"remove_other_variations,omitempty"`
 }
 
 // --- Response DTOs ---

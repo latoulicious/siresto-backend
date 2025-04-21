@@ -264,3 +264,64 @@ func ToVariationDomain(request *CreateVariationRequest) *domain.Variation {
 		Options:       toVariationOptionsDomain(convertCreateToUpdateOptions(request.Options)),
 	}
 }
+
+func ToVariationDomainFromUpdate(request *UpdateVariationRequest) *domain.Variation {
+	variation := &domain.Variation{}
+
+	// Set ID if provided
+	if request.ID != nil {
+		variation.ID = *request.ID
+	}
+
+	// Handle all pointer fields properly
+	if request.IsDefault != nil {
+		variation.IsDefault = *request.IsDefault
+	}
+	if request.IsAvailable != nil {
+		variation.IsAvailable = *request.IsAvailable
+	}
+	if request.IsRequired != nil {
+		variation.IsRequired = *request.IsRequired
+	}
+	if request.VariationType != nil {
+		variation.VariationType = *request.VariationType
+	}
+
+	// Handle options
+	if len(request.Options) > 0 {
+		variation.Options = toVariationOptionsDomain(request.Options)
+	}
+
+	return variation
+}
+
+// In pkg/dto/mapper.go - Add this function
+func ToVariationOptionsDomainFromUpdate(options []UpdateVariationOption) db.VariationOptions {
+	var dbOptions db.VariationOptions
+	for _, opt := range options {
+		// Skip if required fields are nil
+		if opt.Label == nil {
+			continue
+		}
+
+		option := db.VariationOption{
+			Label: *opt.Label,
+		}
+
+		// Handle optional fields
+		if opt.PriceModifier != nil {
+			option.PriceModifier = opt.PriceModifier
+		}
+
+		if opt.PriceAbsolute != nil {
+			option.PriceAbsolute = opt.PriceAbsolute
+		}
+
+		if opt.IsDefault != nil {
+			option.IsDefault = *opt.IsDefault
+		}
+
+		dbOptions = append(dbOptions, option)
+	}
+	return dbOptions
+}

@@ -13,12 +13,13 @@ type CreateVariationRequest struct {
 }
 
 type UpdateVariationRequest struct {
-	ID            *string                 `json:"id"`
-	IsDefault     *bool                   `json:"isDefault"`
-	IsAvailable   *bool                   `json:"isAvailable"`
-	IsRequired    *bool                   `json:"isRequired"`
-	VariationType *string                 `json:"variationType"`
-	Options       []UpdateVariationOption `json:"options"`
+	ID            *uuid.UUID              `json:"id,omitempty"` // Change from string to *uuid.UUID
+	IsDefault     *bool                   `json:"is_default,omitempty"`
+	IsAvailable   *bool                   `json:"is_available,omitempty"`
+	IsRequired    *bool                   `json:"is_required,omitempty"`
+	VariationType *string                 `json:"variation_type,omitempty"`
+	ProductID     *uuid.UUID              `json:"product_id,omitempty"`
+	Options       []UpdateVariationOption `json:"options,omitempty"`
 }
 
 // --- Response DTOs ---

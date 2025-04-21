@@ -89,28 +89,36 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
 	}
 
-	// Retrieve the existing product from the database to preserve unchanged fields
+	// Retrieve the existing product from the database
 	existingProduct, err := h.Service.GetProductByID(id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Product not found", fiber.StatusNotFound))
 	}
 
-	// Map the request body to the domain model, passing the existing product to preserve unchanged fields
+	// Map the request body to the domain model
 	updatedProduct := dto.ToProductDomainFromUpdate(&body, existingProduct)
 
-	// Validate the updated product (we can skip validation for `nil` values to support partial updates)
+	// Validate the updated product
 	if err := validator.ValidateProductForUpdate(h.Service.Repo.DB, updatedProduct); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Validation failed: "+err.Error(), fiber.StatusBadRequest))
 	}
 
-	// Perform the update operation in the service layer
-	updatedProduct, err = h.Service.UpdateProduct(id, updatedProduct)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to update product", fiber.StatusInternalServerError))
+	// Default removeOthers to false if not specified
+	removeOthers := false
+	if body.RemoveOtherVariations != nil {
+		removeOthers = *body.RemoveOtherVariations
 	}
 
-	// Map the updated product to a response DTO for frontend consumption (e.g., snake_case)
+	// Perform the update operation with variations in the service layer
+	updatedProduct, variations, err := h.Service.UpdateProductWithVariations(id, updatedProduct, body.Variations, removeOthers)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to update product: "+err.Error(), fiber.StatusInternalServerError))
+	}
+
+	// Map the updated product to a response DTO
 	response := dto.ToProductResponse(updatedProduct)
+	// Include variations in the response
+	response.Variations = dto.ToVariationResponses(variations)
 
 	// Return the updated product in the response
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Product updated successfully", response))

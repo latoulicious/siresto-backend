@@ -117,6 +117,138 @@ func (s *ProductService) UpdateProduct(id uuid.UUID, update *domain.Product) (*d
 	return existing, nil
 }
 
+func (s *ProductService) UpdateProductWithVariations(id uuid.UUID, product *domain.Product, variations []dto.UpdateVariationRequest, removeOthers bool) (*domain.Product, []*domain.Variation, error) {
+	// Start transaction
+	tx := s.Repo.DB.Begin()
+	if tx.Error != nil {
+		return nil, nil, fmt.Errorf("failed to begin transaction: %w", tx.Error)
+	}
+
+	// Fetch existing product with variations
+	existingProduct := &domain.Product{}
+	if err := tx.Preload("Variations").First(existingProduct, "id = ?", id).Error; err != nil {
+		tx.Rollback()
+		return nil, nil, fmt.Errorf("product not found: %w", err)
+	}
+
+	// Update product fields
+	existingProduct.Name = product.Name
+	existingProduct.Description = product.Description
+	existingProduct.ImageURL = product.ImageURL
+	existingProduct.BasePrice = product.BasePrice
+	existingProduct.IsAvailable = product.IsAvailable
+	existingProduct.Position = product.Position
+	if product.CategoryID != nil {
+		existingProduct.CategoryID = product.CategoryID
+	}
+
+	// Save product updates
+	if err := tx.Save(existingProduct).Error; err != nil {
+		tx.Rollback()
+		return nil, nil, fmt.Errorf("failed to update product: %w", err)
+	}
+
+	// Handle variations only if they're provided
+	var updatedVariations []*domain.Variation
+
+	// Map existing variations by ID for efficient lookup
+	existingVariationsMap := make(map[uuid.UUID]*domain.Variation)
+	for i := range existingProduct.Variations {
+		existingVariationsMap[existingProduct.Variations[i].ID] = &existingProduct.Variations[i]
+	}
+
+	// Track which variation IDs are being updated
+	processedIDs := make(map[uuid.UUID]bool)
+
+	// Process each variation in the request
+	for _, varDTO := range variations {
+		if varDTO.ID != nil {
+			// Update existing variation
+			if existingVar, found := existingVariationsMap[*varDTO.ID]; found {
+				// Update fields that are present in the request
+				if varDTO.IsDefault != nil {
+					existingVar.IsDefault = *varDTO.IsDefault
+				}
+				if varDTO.IsAvailable != nil {
+					existingVar.IsAvailable = *varDTO.IsAvailable
+				}
+				if varDTO.IsRequired != nil {
+					existingVar.IsRequired = *varDTO.IsRequired
+				}
+				if varDTO.VariationType != nil {
+					existingVar.VariationType = *varDTO.VariationType
+				}
+
+				// Handle options update if provided
+				if len(varDTO.Options) > 0 {
+					existingVar.Options = dto.ToVariationOptionsDomainFromUpdate(varDTO.Options)
+				}
+
+				// Save the updated variation
+				if err := tx.Save(existingVar).Error; err != nil {
+					tx.Rollback()
+					return nil, nil, fmt.Errorf("failed to update variation: %w", err)
+				}
+
+				updatedVariations = append(updatedVariations, existingVar)
+				processedIDs[*varDTO.ID] = true
+			}
+		} else {
+			// Create new variation
+			newVariation := &domain.Variation{
+				ID:        uuid.New(),
+				ProductID: existingProduct.ID,
+			}
+
+			// Set optional fields
+			if varDTO.IsDefault != nil {
+				newVariation.IsDefault = *varDTO.IsDefault
+			}
+			if varDTO.IsAvailable != nil {
+				newVariation.IsAvailable = *varDTO.IsAvailable
+			}
+			if varDTO.IsRequired != nil {
+				newVariation.IsRequired = *varDTO.IsRequired
+			}
+			if varDTO.VariationType != nil {
+				newVariation.VariationType = *varDTO.VariationType
+			}
+
+			// Handle options
+			if len(varDTO.Options) > 0 {
+				newVariation.Options = dto.ToVariationOptionsDomainFromUpdate(varDTO.Options)
+			}
+
+			if err := tx.Create(newVariation).Error; err != nil {
+				tx.Rollback()
+				return nil, nil, fmt.Errorf("failed to create new variation: %w", err)
+			}
+
+			updatedVariations = append(updatedVariations, newVariation)
+		}
+	}
+
+	// Delete variations that aren't in the update request if removeOthers flag is set
+	if removeOthers && len(processedIDs) > 0 {
+		for id := range existingVariationsMap {
+			if !processedIDs[id] {
+				if err := tx.Delete(&domain.Variation{}, "id = ?", id).Error; err != nil {
+					tx.Rollback()
+					return nil, nil, fmt.Errorf("failed to delete variation: %w", err)
+				}
+			}
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		return nil, nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Return updated entities
+	return existingProduct, updatedVariations, nil
+}
+
 // DeleteProduct removes a product by its ID from the repository
 func (s *ProductService) DeleteProduct(id uuid.UUID) error {
 	// Perform deletability validation
