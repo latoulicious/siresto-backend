@@ -58,15 +58,17 @@ func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
 	}
 
 	// Create the product (interact with the service layer)
-	createdProduct, err := h.Service.CreateProduct(product)
+	createdProduct, variations, err := h.Service.CreateProductWithVariations(product, body.Variations)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to create product: "+err.Error(), fiber.StatusInternalServerError))
 	}
 
 	// Map the domain model back to a DTO for the response (snake_case for frontend)
 	response := dto.ToProductResponse(createdProduct)
+	// Include variations in the response
+	response.Variations = dto.ToVariationResponses(variations)
 
-	// Return the successful response with the product details
+	// Return the successful response with the product details and variations
 	return c.Status(fiber.StatusCreated).JSON(utils.Success("Product created successfully", response))
 }
 

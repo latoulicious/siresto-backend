@@ -7,6 +7,7 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/repository"
 	"github.com/latoulicious/siresto-backend/internal/validator"
+	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
 type ProductService struct {
@@ -47,6 +48,44 @@ func (s ProductService) CreateProduct(product *domain.Product) (*domain.Product,
 	}
 
 	return created, nil
+}
+
+func (s *ProductService) CreateProductWithVariations(product *domain.Product, variations []dto.CreateVariationRequest) (*domain.Product, []*domain.Variation, error) {
+	// Start a database transaction to ensure atomicity
+	tx := s.Repo.DB.Begin()
+
+	// Create the product
+	if err := tx.Create(&product).Error; err != nil {
+		tx.Rollback()
+		return nil, nil, fmt.Errorf("failed to create product: %w", err)
+	}
+
+	// Prepare a slice to hold the created variations (pointer slice)
+	var createdVariations []*domain.Variation
+
+	// Handle variations, if provided
+	for _, variationDTO := range variations {
+		// Map the DTO to domain variation
+		variation := dto.ToVariationDomain(&variationDTO)
+		variation.ProductID = product.ID
+
+		// Save the variation
+		if err := tx.Create(&variation).Error; err != nil {
+			tx.Rollback()
+			return nil, nil, fmt.Errorf("failed to create variation: %w", err)
+		}
+
+		// Append the created variation to the slice (pointers)
+		createdVariations = append(createdVariations, variation)
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return nil, nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Return the created product and its variations
+	return product, createdVariations, nil
 }
 
 // UpdateProduct updates an existing product in the repository

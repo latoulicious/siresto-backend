@@ -108,7 +108,6 @@ func ToUpdateProductRequest(p *domain.Product) *UpdateProductRequest {
 }
 
 // Mapping DTO back to &Domain
-
 func ToProductDomainFromCreate(request *CreateProductRequest) *domain.Product {
 	return &domain.Product{
 		Name:        request.Name,
@@ -152,7 +151,31 @@ func ToProductDomainFromUpdate(request *UpdateProductRequest, existingProduct *d
 }
 
 // Variation DTO
+func ToVariationResponses(variations []*domain.Variation) []VariationSummary {
+	var variationResponses []VariationSummary
+	for _, variation := range variations {
+		if variation == nil {
+			continue
+		}
+
+		variationResponse := VariationSummary{
+			ID:            variation.ID,
+			IsDefault:     variation.IsDefault,
+			IsAvailable:   variation.IsAvailable,
+			IsRequired:    variation.IsRequired,
+			VariationType: variation.VariationType,
+			Options:       toVariationOptions(variation.Options),
+		}
+		variationResponses = append(variationResponses, variationResponse)
+	}
+	return variationResponses
+}
+
 func ToCreateVariationRequest(v *domain.Variation) *CreateVariationRequest {
+	if v == nil {
+		return nil
+	}
+
 	return &CreateVariationRequest{
 		IsDefault:     v.IsDefault,
 		IsAvailable:   v.IsAvailable,
@@ -163,12 +186,16 @@ func ToCreateVariationRequest(v *domain.Variation) *CreateVariationRequest {
 }
 
 func ToUpdateVariationRequest(v *domain.Variation) *UpdateVariationRequest {
+	if v == nil {
+		return nil
+	}
+
 	return &UpdateVariationRequest{
 		IsDefault:     &v.IsDefault,
 		IsAvailable:   &v.IsAvailable,
 		IsRequired:    &v.IsRequired,
 		VariationType: &v.VariationType,
-		Options:       toUpdateVariationOptions(v.Options),
+		Options:       toVariationOptionsUpdate(v.Options),
 	}
 }
 
@@ -185,15 +212,55 @@ func toCreateVariationOptions(options db.VariationOptions) []CreateVariationOpti
 	return dtoOptions
 }
 
-func toUpdateVariationOptions(options db.VariationOptions) []UpdateVariationOption {
-	var dtoOptions []UpdateVariationOption
+func toVariationOptionsUpdate(options db.VariationOptions) []UpdateVariationOption {
+	var updateOpts []UpdateVariationOption
 	for _, opt := range options {
-		dtoOptions = append(dtoOptions, UpdateVariationOption{
+		label := opt.Label
+		isDefault := opt.IsDefault
+		updateOpts = append(updateOpts, UpdateVariationOption{
+			Label:         &label,
+			PriceModifier: opt.PriceModifier,
+			PriceAbsolute: opt.PriceAbsolute,
+			IsDefault:     &isDefault,
+		})
+	}
+	return updateOpts
+}
+
+func toVariationOptionsDomain(options []UpdateVariationOption) db.VariationOptions {
+	var dbOptions db.VariationOptions
+	for _, opt := range options {
+		// Convert UpdateVariationOption to CreateVariationOption
+		dbOptions = append(dbOptions, db.VariationOption{
+			Label:         *opt.Label,
+			PriceModifier: opt.PriceModifier,
+			PriceAbsolute: opt.PriceAbsolute,
+			IsDefault:     *opt.IsDefault,
+		})
+	}
+	return dbOptions
+}
+
+func convertCreateToUpdateOptions(createOpts []CreateVariationOption) []UpdateVariationOption {
+	var updateOpts []UpdateVariationOption
+	for _, opt := range createOpts {
+		updateOpts = append(updateOpts, UpdateVariationOption{
 			Label:         &opt.Label,
 			PriceModifier: opt.PriceModifier,
 			PriceAbsolute: opt.PriceAbsolute,
 			IsDefault:     &opt.IsDefault,
 		})
 	}
-	return dtoOptions
+	return updateOpts
+}
+
+func ToVariationDomain(request *CreateVariationRequest) *domain.Variation {
+	return &domain.Variation{
+		ProductID:     *request.ProductID,
+		IsDefault:     request.IsDefault,
+		IsAvailable:   request.IsAvailable,
+		IsRequired:    request.IsRequired,
+		VariationType: request.VariationType,
+		Options:       toVariationOptionsDomain(convertCreateToUpdateOptions(request.Options)),
+	}
 }

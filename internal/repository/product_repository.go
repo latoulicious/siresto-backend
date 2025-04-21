@@ -13,7 +13,10 @@ type ProductRepository struct {
 // ListAllProducts fetches all products from the database
 func (r *ProductRepository) ListAllProducts() ([]domain.Product, error) {
 	var products []domain.Product
-	err := r.DB.Preload("Category").Find(&products).Error
+	err := r.DB.
+		Preload("Category").
+		Preload("Variations").
+		Find(&products).Error
 	if err != nil {
 		return nil, err
 	}
