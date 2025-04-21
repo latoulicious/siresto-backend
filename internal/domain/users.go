@@ -13,7 +13,7 @@ type User struct {
 	Password    string    `gorm:"type:text" json:"-"`
 	IsStaff     bool      `gorm:"default:false"`
 	RoleID      *int      `gorm:"foreignKey:RoleID"`
-	Role        *Role     `gorm:"foreignKey:RoleID"`
+	Role        []*Role   `gorm:"foreignKey:RoleID"`
 	CreatedAt   time.Time `gorm:"default:now()"`
 	LastLoginAt *time.Time
 }
