@@ -36,12 +36,13 @@ func (r *ThemeRepository) CreateTheme(theme *domain.Theme) error {
 	return nil
 }
 
-func (r *ThemeRepository) UpdateTheme(theme *domain.Theme) error {
-	err := r.DB.Save(theme).Error
-	if err != nil {
-		return err
+func (r *ThemeRepository) UpdateTheme(theme *domain.Theme) (*domain.Theme, error) {
+	// Use GORM's Updates method to update the theme directly
+	if err := r.DB.Model(&theme).Where("id = ?", theme.ID).Updates(theme).Error; err != nil {
+		return nil, err
 	}
-	return nil
+
+	return theme, nil
 }
 
 func (r *ThemeRepository) DeleteTheme(id uuid.UUID) error {

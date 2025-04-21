@@ -104,19 +104,54 @@ func (h *ThemeHandler) CreateTheme(c *fiber.Ctx) error {
 func (h *ThemeHandler) UpdateTheme(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid theme ID format", fiber.StatusBadRequest))
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid theme ID", fiber.StatusBadRequest))
 	}
 
-	var theme domain.Theme
-	if err := c.BodyParser(&theme); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request payload", fiber.StatusBadRequest))
+	// Retrieve the existing theme from the database
+	theme, err := h.Service.GetThemeByID(id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Theme not found", fiber.StatusNotFound))
 	}
 
-	theme.ID = id
-	if err := h.Service.UpdateTheme(&theme); err != nil {
+	// Parse the request body into a partial update model
+	var body domain.Theme
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
+	}
+
+	// Only update the fields that are set in the request body
+	if body.Name != "" {
+		theme.Name = body.Name
+	}
+	if body.PrimaryColor != "" {
+		theme.PrimaryColor = body.PrimaryColor
+	}
+	if body.SecondaryColor != "" {
+		theme.SecondaryColor = body.SecondaryColor
+	}
+	if body.AccentColor != "" {
+		theme.AccentColor = body.AccentColor
+	}
+	if body.BackgroundColor != "" {
+		theme.BackgroundColor = body.BackgroundColor
+	}
+	if body.LogoURL != "" {
+		theme.LogoURL = body.LogoURL
+	}
+	if body.FaviconURL != "" {
+		theme.FaviconURL = body.FaviconURL
+	}
+	if body.IsDefault != theme.IsDefault {
+		theme.IsDefault = body.IsDefault
+	}
+
+	// Save the updated theme back to the database and handle both returned values
+	updatedTheme, err := h.Service.UpdateTheme(theme)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to update theme", fiber.StatusInternalServerError))
 	}
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Theme updated successfully", theme))
+
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Theme updated successfully", updatedTheme))
 }
 
 func (h *ThemeHandler) DeleteTheme(c *fiber.Ctx) error {

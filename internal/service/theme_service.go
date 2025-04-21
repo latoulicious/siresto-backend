@@ -34,12 +34,13 @@ func (s *ThemeService) CreateTheme(theme *domain.Theme) error {
 	return nil
 }
 
-func (s *ThemeService) UpdateTheme(theme *domain.Theme) error {
-	err := s.Repo.UpdateTheme(theme)
+func (s *ThemeService) UpdateTheme(theme *domain.Theme) (*domain.Theme, error) {
+	updatedTheme, err := s.Repo.UpdateTheme(theme)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	return updatedTheme, nil
 }
 
 func (s *ThemeService) DeleteTheme(id uuid.UUID) error {
