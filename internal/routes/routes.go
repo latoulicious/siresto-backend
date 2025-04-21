@@ -18,6 +18,9 @@ import (
 const responseTimeThreshold = 500 * time.Millisecond
 
 func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
+
+	//* Menu domain
+
 	// QR Code domain
 	qrRepo := &repository.QRCodeRepository{DB: db}
 	qrService := &service.QRCodeService{Repo: qrRepo}
@@ -38,6 +41,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	variationService := &service.VariationService{Repo: variationRepo}
 	variationHandler := &handler.VariationHandler{Service: variationService}
 
+	//* Core Domain
+
 	// User domain
 	userRepo := &repository.UserRepository{DB: db}
 	userService := &service.UserService{Repo: userRepo}
@@ -52,6 +57,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	orderRepo := &repository.OrderRepository{DB: db}
 	orderService := &service.OrderService{Repo: orderRepo}
 	orderHandler := &handler.OrderHandler{OrderService: orderService}
+
+	//* Utility Domain
+
+	// Theme domain
+	themeRepo := &repository.ThemeRepository{DB: db}
+	themeService := &service.ThemeService{Repo: themeRepo}
+	themeHandler := &handler.ThemeHandler{Service: themeService}
 
 	// API v1
 	v1 := app.Group("/api/v1")
@@ -244,4 +256,20 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 		return c.Status(fiber.StatusOK).JSON(utils.Success("Logs fetched successfully", logs))
 	})
 	logger.LogInfo("GET /api/v1/logs route registered", logutil.Route("GET", "/api/v1/logs"))
+
+	// Utility routes
+	v1.Get("/themes", themeHandler.ListAllThemes)
+	logger.LogInfo("GET /api/v1/themes route registered", logutil.Route("GET", "/api/v1/themes"))
+
+	v1.Get("/themes/:id", themeHandler.GetThemeByID)
+	logger.LogInfo("GET /api/v1/themes/:id route registered", logutil.Route("GET", "/api/v1/themes/:id"))
+
+	v1.Post("/themes", themeHandler.CreateTheme)
+	logger.LogInfo("POST /api/v1/themes route registered", logutil.Route("POST", "/api/v1/themes"))
+
+	v1.Put("/themes/:id", themeHandler.UpdateTheme)
+	logger.LogInfo("PUT /api/v1/themes/:id route registered", logutil.Route("PUT", "/api/v1/themes/:id"))
+
+	v1.Delete("/themes/:id", themeHandler.DeleteTheme)
+	logger.LogInfo("DELETE /api/v1/themes/:id route registered", logutil.Route("DELETE", "/api/v1/themes/:id"))
 }

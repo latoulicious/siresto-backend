@@ -42,6 +42,7 @@ func RunMigrations(db *gorm.DB) error {
 		// Utility models
 		&domain.QRCode{},
 		&domain.Log{},
+		&domain.Theme{},
 	)
 }
 
