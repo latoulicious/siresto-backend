@@ -328,11 +328,14 @@ func ToVariationOptionsDomainFromUpdate(options []UpdateVariationOption) db.Vari
 
 // Order DTO
 func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
+	// Map order details to order items
 	items := make([]OrderItemDTO, 0, len(order.OrderDetails))
 
 	for _, detail := range order.OrderDetails {
+		// Extract variation information
 		variationName := ""
 		if detail.Variation != nil && len(detail.Variation.Options) > 0 {
+			// Find default option for variation name
 			for _, opt := range detail.Variation.Options {
 				if opt.IsDefault {
 					variationName = opt.Label
@@ -341,14 +344,36 @@ func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
 			}
 		}
 
+		// Calculate actual price factoring in variations
+		unitPrice := detail.UnitPrice
+		if unitPrice == 0 && detail.Product != nil {
+			unitPrice = detail.Product.BasePrice
+		}
+
+		totalPrice := detail.TotalPrice
+		if totalPrice == 0 {
+			totalPrice = float64(detail.Quantity) * unitPrice
+		}
+
+		// Get product name either from detail or related product
+		productName := detail.ProductName
+		if productName == "" && detail.Product != nil {
+			productName = detail.Product.Name
+		}
+
+		productID := ""
+		if detail.ProductID != nil {
+			productID = detail.ProductID.String()
+		}
+
 		items = append(items, OrderItemDTO{
 			ID:          detail.ID.String(),
-			ProductID:   detail.ProductID.String(),
-			ProductName: detail.Product.Name,
+			ProductID:   productID,
+			ProductName: productName,
 			Variation:   variationName,
 			Quantity:    detail.Quantity,
-			UnitPrice:   detail.Product.BasePrice,
-			TotalPrice:  float64(detail.Quantity) * detail.Product.BasePrice,
+			UnitPrice:   unitPrice,
+			TotalPrice:  totalPrice,
 			Note:        detail.Note,
 		})
 	}
@@ -359,7 +384,8 @@ func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
 		CustomerPhone: order.CustomerPhone,
 		TableNumber:   order.TableNumber,
 		Status:        string(order.Status),
-		TotalAmount:   float64(order.TotalAmount) / 100, // Assuming stored in cents
+		DishStatus:    string(order.DishStatus),
+		TotalAmount:   order.TotalAmount,
 		Notes:         order.Notes,
 		CreatedAt:     order.CreatedAt,
 		PaidAt:        order.PaidAt,

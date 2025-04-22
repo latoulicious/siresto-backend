@@ -9,6 +9,7 @@ type OrderResponseDTO struct {
 	CustomerPhone string         `json:"customerPhone,omitempty"`
 	TableNumber   int            `json:"tableNumber"`
 	Status        string         `json:"status"`
+	DishStatus    string         `json:"dishStatus,omitempty"`
 	TotalAmount   float64        `json:"totalAmount"`
 	Notes         string         `json:"notes,omitempty"`
 	CreatedAt     time.Time      `json:"createdAt"`
@@ -16,7 +17,7 @@ type OrderResponseDTO struct {
 	Items         []OrderItemDTO `json:"items"`
 }
 
-// OrderItemDTO - Simplified order item
+// OrderItemDTO - Simplified order item representation
 type OrderItemDTO struct {
 	ID          string  `json:"id"`
 	ProductID   string  `json:"productId"`

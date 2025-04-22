@@ -26,7 +26,7 @@ type Order struct {
 	CustomerName  string      `gorm:"type:text;not null"`
 	CustomerPhone string      `gorm:"type:text;not null"`
 	TableNumber   int         `gorm:"type:int;not null"`
-	Status        OrderStatus `gorm:"type:text;not null"`
+	Status        OrderStatus `gorm:"type:text;not null;default:'PENDING'"`
 	DishStatus    FoodStatus  `gorm:"type:text;not null;default:'Diterima'"`
 	TotalAmount   float64     `gorm:"type:numeric(10,2);default:0" json:"total_amount"`
 	Notes         string      `gorm:"type:text"`

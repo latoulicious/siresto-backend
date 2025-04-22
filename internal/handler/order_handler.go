@@ -6,6 +6,7 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/service"
 	"github.com/latoulicious/siresto-backend/internal/utils"
+	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
 type OrderRequest struct {
@@ -38,7 +39,14 @@ func (h *OrderHandler) ListAllOrders(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve orders", fiber.StatusInternalServerError))
 	}
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Orders retrieved successfully", orders))
+
+	// Map all orders to DTOs
+	orderDTOs := make([]dto.OrderResponseDTO, len(orders))
+	for i, order := range orders {
+		orderDTOs[i] = dto.MapToOrderResponseDTO(&order)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Orders retrieved successfully", orderDTOs))
 }
 
 func (handler *OrderHandler) CreateOrder(c *fiber.Ctx) error {
@@ -58,8 +66,11 @@ func (handler *OrderHandler) CreateOrder(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Respond with the created order, including details
-	return c.Status(fiber.StatusCreated).JSON(createdOrder)
+	// Map to DTO before returning response
+	responseDTO := dto.MapToOrderResponseDTO(createdOrder)
+
+	// Respond with the DTO instead of raw domain model
+	return c.Status(fiber.StatusCreated).JSON(responseDTO)
 }
 
 // Map request model to domain model
@@ -70,7 +81,6 @@ func mapOrderRequestToDomain(req OrderRequest) *domain.Order {
 		CustomerPhone: req.CustomerPhone,
 		TableNumber:   req.TableNumber,
 		Status:        domain.OrderStatus(req.Status),
-		TotalAmount:   req.TotalAmount,
 		Notes:         req.Notes,
 	}
 }

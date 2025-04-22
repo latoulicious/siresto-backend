@@ -58,7 +58,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	// Order domain
 	orderRepo := &repository.OrderRepository{DB: db}
-	orderService := &service.OrderService{Repo: orderRepo}
+	orderService := &service.OrderService{
+		Repo:          orderRepo,
+		ProductRepo:   productRepo,
+		VariationRepo: variationRepo,
+	}
 	orderHandler := &handler.OrderHandler{OrderService: orderService}
 
 	//* Utility Domain
