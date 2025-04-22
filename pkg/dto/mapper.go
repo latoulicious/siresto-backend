@@ -5,7 +5,7 @@ import (
 	"github.com/latoulicious/siresto-backend/pkg/db"
 )
 
-// Convert domain.Category to dto.CategoryResponse
+// Category DTO
 func ToCategoryResponse(c *domain.Category) *CategoryResponse {
 	category := &CategoryResponse{
 		ID:       c.ID,
@@ -120,6 +120,7 @@ func ToProductDomainFromCreate(request *CreateProductRequest) *domain.Product {
 	}
 }
 
+// Mapping DTO back to &Domain
 func ToProductDomainFromUpdate(request *UpdateProductRequest, existingProduct *domain.Product) *domain.Product {
 	// Create a copy of the existing product to preserve unchanged values
 	updatedProduct := *existingProduct
@@ -227,6 +228,7 @@ func toVariationOptionsUpdate(options db.VariationOptions) []UpdateVariationOpti
 	return updateOpts
 }
 
+// Mapping DTO back to &Domain
 func toVariationOptionsDomain(options []UpdateVariationOption) db.VariationOptions {
 	var dbOptions db.VariationOptions
 	for _, opt := range options {
@@ -254,6 +256,7 @@ func convertCreateToUpdateOptions(createOpts []CreateVariationOption) []UpdateVa
 	return updateOpts
 }
 
+// Mapping DTO back to &Domain
 func ToVariationDomain(request *CreateVariationRequest) *domain.Variation {
 	return &domain.Variation{
 		ProductID:     *request.ProductID,
@@ -265,6 +268,7 @@ func ToVariationDomain(request *CreateVariationRequest) *domain.Variation {
 	}
 }
 
+// Mapping DTO back to &Domain
 func ToVariationDomainFromUpdate(request *UpdateVariationRequest) *domain.Variation {
 	variation := &domain.Variation{}
 
@@ -295,7 +299,7 @@ func ToVariationDomainFromUpdate(request *UpdateVariationRequest) *domain.Variat
 	return variation
 }
 
-// In pkg/dto/mapper.go - Add this function
+// Mapping DTO back to &Domain
 func ToVariationOptionsDomainFromUpdate(options []UpdateVariationOption) db.VariationOptions {
 	var dbOptions db.VariationOptions
 	for _, opt := range options {

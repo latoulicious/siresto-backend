@@ -2,7 +2,7 @@ package dto
 
 import "time"
 
-// OrderResponseDTO - Clean representation for client consumption
+// --- Request DTOs ---
 type OrderResponseDTO struct {
 	ID            string         `json:"id"`
 	CustomerName  string         `json:"customerName"`
@@ -17,7 +17,7 @@ type OrderResponseDTO struct {
 	Items         []OrderItemDTO `json:"items"`
 }
 
-// OrderItemDTO - Simplified order item representation
+// --- Response DTOs ---
 type OrderItemDTO struct {
 	ID          string  `json:"id"`
 	ProductID   string  `json:"productId"`
