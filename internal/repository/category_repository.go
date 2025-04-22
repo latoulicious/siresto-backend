@@ -67,3 +67,24 @@ func (r *CategoryRepository) UpdateCategory(category *domain.Category) error {
 func (r *CategoryRepository) DeleteCategory(id uuid.UUID) error {
 	return r.DB.Delete(&domain.Category{}, "id = ?", id).Error
 }
+
+// Helper Function
+func (r *CategoryRepository) ExistsByName(name string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&domain.Category{}).Where("LOWER(name) = LOWER(?)", name).Count(&count).Error
+	return count > 0, err
+}
+
+func (r *CategoryRepository) ExistsByNameExcludingID(name string, excludeID uuid.UUID) (bool, error) {
+	var count int64
+	err := r.DB.Model(&domain.Category{}).
+		Where("LOWER(name) = LOWER(?) AND id != ?", name, excludeID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (r *CategoryRepository) HasAssociatedProducts(categoryID uuid.UUID) (bool, error) {
+	var count int64
+	err := r.DB.Model(&domain.Product{}).Where("category_id = ?", categoryID).Count(&count).Error
+	return count > 0, err
+}

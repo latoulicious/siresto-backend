@@ -6,7 +6,6 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/service"
 	"github.com/latoulicious/siresto-backend/internal/utils"
-	"github.com/latoulicious/siresto-backend/internal/validator"
 	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
@@ -14,12 +13,9 @@ type CategoryHandler struct {
 	Service *service.CategoryService
 }
 
-// ListAllCategories retrieves all categories, optionally including products
+// ListAllCategories retrieves all categories, always including products
 func (h *CategoryHandler) ListAllCategories(c *fiber.Ctx) error {
-	// Parse query parameter for product inclusion
-	includeProducts := c.Query("include_products") == "true"
-
-	categories, err := h.Service.ListAllCategories(includeProducts)
+	categories, err := h.Service.ListAllCategories(true) // Always include products
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve categories", fiber.StatusInternalServerError))
 	}
@@ -33,7 +29,7 @@ func (h *CategoryHandler) ListAllCategories(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Categories retrieved successfully", categoryResponses))
 }
 
-// GetByIDHandler retrieves a category by ID
+// GetCategoryByID retrieves a category by ID
 func (h *CategoryHandler) GetCategoryByID(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -56,17 +52,12 @@ func (h *CategoryHandler) CreateCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
 	}
 
-	// Validate input
-	if err := validator.ValidateCategory(h.Service.Repo.DB, &body); err != nil {
+	// Delegate validation to the service layer
+	createdCategory, err := h.Service.CreateCategory(&body)
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
 	}
 
-	createdCategory, err := h.Service.CreateCategory(&body)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to create category", fiber.StatusInternalServerError))
-	}
-
-	// Convert domain model to DTO response
 	response := dto.ToCategoryResponse(createdCategory)
 
 	return c.Status(fiber.StatusCreated).JSON(utils.Success("Category created successfully", response))
@@ -99,11 +90,7 @@ func (h *CategoryHandler) DeleteCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest))
 	}
 
-	// Validate category before deletion
-	if err := validator.ValidateCategoryDeletable(h.Service.Repo.DB, id); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
-	}
-
+	// Delegate validation to the service layer for deletion
 	if err := h.Service.DeleteCategory(id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to delete category", fiber.StatusInternalServerError))
 	}
