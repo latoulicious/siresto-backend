@@ -226,7 +226,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Delete("/variations/:id", variationHandler.DeleteVariation)
 	logger.LogInfo("DELETE /api/v1/variations/:id route registered", logutil.Route("DELETE", "/api/v1/variations/:id"))
 
-	// TODO
 	// Variation Routes (Tied to a specific product)
 
 	v1.Get("/products/:product_id/variations", variationHandler.GetProductVariations)
@@ -256,6 +255,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	// v1.Delete("/orders/:id", orderHandler.DeleteOrder)
 	// logger.LogInfo("DELETE /api/v1/orders/:id route registered", logutil.Route("DELETE", "/api/v1/orders/:id"))
+
+	v1.Post("/orders/:orderID/complete", orderHandler.MarkOrderAsCompleted)
+	logger.LogInfo("POST /api/v1/orders/:orderID/complete route registered", logutil.Route("POST", "/api/v1/orders/:orderID/complete"))
 
 	// Order Payment
 	v1.Post("/orders/:orderID/payments", paymentHandler.ProcessOrderPayment)

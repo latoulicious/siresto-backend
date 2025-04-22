@@ -119,7 +119,6 @@ func calculateUnitPrice(detail *domain.OrderDetail) float64 {
 	return price
 }
 
-// internal/service/order_service.go - Add this method
 func (s *OrderService) GetOrderPaymentStatus(orderID uuid.UUID) (domain.OrderStatus, error) {
 	// Get order with payment details
 	order, err := s.Repo.GetOrderWithDetails(orderID)
@@ -149,6 +148,42 @@ func (s *OrderService) ValidatePaymentForOrder(orderID uuid.UUID, amount float64
 	if order.TotalAmount != amount {
 		return fmt.Errorf("payment amount (%f) does not match order total (%f)",
 			amount, order.TotalAmount)
+	}
+
+	return nil
+}
+
+func (s *OrderService) UpdateDishStatusToCompleted(orderID uuid.UUID) error {
+	// Begin transaction
+	tx := s.Repo.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Get current order
+	var order domain.Order
+	if err := tx.First(&order, "id = ?", orderID).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("order not found: %w", err)
+	}
+
+	// Validate the current dish status - only allow transition from Diproses to Selesai
+	if order.DishStatus != domain.FoodStatusDiproses {
+		tx.Rollback()
+		return fmt.Errorf("dish status must be 'Diproses' to mark as completed, current status: %s", order.DishStatus)
+	}
+
+	// Update to Selesai
+	if err := tx.Model(&order).Update("dish_status", domain.FoodStatusSelesai).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to update dish status: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("transaction failed: %w", err)
 	}
 
 	return nil

@@ -22,7 +22,6 @@ func (s *PaymentService) CreatePayment(payment *domain.Payment) error {
 	return s.Repo.Create(payment)
 }
 
-// internal/service/payment_service.go
 func (s *PaymentService) ProcessOrderPayment(orderID uuid.UUID, payment *domain.Payment) (*domain.Payment, error) {
 	// Validate payment data
 	if payment.Method == "" || payment.Amount <= 0 {
@@ -44,14 +43,25 @@ func (s *PaymentService) ProcessOrderPayment(orderID uuid.UUID, payment *domain.
 		return nil, fmt.Errorf("order not found: %w", err)
 	}
 
-	// 2. Verify payment amount matches order total
+	// 2. Validate current order state
+	if order.Status == domain.OrderStatusPaid {
+		tx.Rollback()
+		return nil, errors.New("order is already paid")
+	}
+
+	if order.Status == domain.OrderStatusCancelled {
+		tx.Rollback()
+		return nil, errors.New("cannot process payment for cancelled order")
+	}
+
+	// 3. Verify payment amount matches order total
 	if payment.Amount != order.TotalAmount {
 		tx.Rollback()
 		return nil, fmt.Errorf("payment amount (%f) does not match order total (%f)",
 			payment.Amount, order.TotalAmount)
 	}
 
-	// 3. Set payment fields
+	// 4. Set payment fields
 	payment.OrderID = orderID
 	payment.Status = domain.PaymentStatusSuccess
 
@@ -60,23 +70,24 @@ func (s *PaymentService) ProcessOrderPayment(orderID uuid.UUID, payment *domain.
 		payment.PaidAt = time.Now()
 	}
 
-	// 4. Create payment record
+	// 5. Create payment record
 	if err := tx.Create(payment).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to create payment: %w", err)
 	}
 
-	// 5. Update order status to paid
+	// 6. Update order status to paid AND dish status to Diproses
 	now := time.Now()
 	if err := tx.Model(&order).Updates(map[string]interface{}{
-		"status":  domain.OrderStatusPaid,
-		"paid_at": now,
+		"status":      domain.OrderStatusPaid,
+		"dish_status": domain.FoodStatusDiproses, // Auto-transition to Diproses on payment
+		"paid_at":     now,
 	}).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	// 6. Commit transaction
+	// 7. Commit transaction
 	if err := tx.Commit().Error; err != nil {
 		return nil, fmt.Errorf("transaction failed: %w", err)
 	}

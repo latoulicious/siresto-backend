@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
@@ -102,4 +104,26 @@ func mapOrderDetailsRequestToDomain(reqs []OrderDetailRequest) []domain.OrderDet
 	}
 
 	return details
+}
+
+func (h *OrderHandler) MarkOrderAsCompleted(c *fiber.Ctx) error {
+	// Parse order ID
+	orderID, err := uuid.Parse(c.Params("orderID"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid order ID", fiber.StatusBadRequest))
+	}
+
+	// Update the status
+	if err := h.OrderService.UpdateDishStatusToCompleted(orderID); err != nil {
+		// Handle different error types
+		if strings.Contains(err.Error(), "order not found") {
+			return c.Status(fiber.StatusNotFound).JSON(utils.Error(err.Error(), fiber.StatusNotFound))
+		}
+		if strings.Contains(err.Error(), "must be 'Diproses'") {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error(err.Error(), fiber.StatusInternalServerError))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Order marked as completed", nil))
 }
