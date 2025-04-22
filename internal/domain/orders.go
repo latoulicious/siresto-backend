@@ -7,11 +7,18 @@ import (
 )
 
 type OrderStatus string
+type FoodStatus string
 
 const (
 	OrderStatusPending   OrderStatus = "PENDING"
 	OrderStatusPaid      OrderStatus = "PAID"
 	OrderStatusCancelled OrderStatus = "CANCELLED"
+)
+
+const (
+	FoodStatusDiterima FoodStatus = "Diterima"
+	FoodStatusDiproses FoodStatus = "Diproses"
+	FoodStatusSelesai  FoodStatus = "Selesai"
 )
 
 type Order struct {
@@ -20,6 +27,7 @@ type Order struct {
 	CustomerPhone string      `gorm:"type:text;not null"`
 	TableNumber   int         `gorm:"type:int;not null"`
 	Status        OrderStatus `gorm:"type:text;not null"`
+	DishStatus    FoodStatus  `gorm:"type:text;not null;default:'Diterima'"`
 	TotalAmount   float64     `gorm:"type:numeric(10,2);default:0" json:"total_amount"`
 	Notes         string      `gorm:"type:text"`
 	CreatedAt     time.Time   `gorm:"default:now()"`
