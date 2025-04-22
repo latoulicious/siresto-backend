@@ -65,6 +65,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	}
 	orderHandler := &handler.OrderHandler{OrderService: orderService}
 
+	// Payment domain
+	paymentRepo := &repository.PaymentRepository{DB: db}
+	paymentService := &service.PaymentService{Repo: paymentRepo}
+	paymentHandler := &handler.PaymentHandler{Service: paymentService}
+
 	//* Utility Domain
 
 	// Theme domain
@@ -251,6 +256,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	// v1.Delete("/orders/:id", orderHandler.DeleteOrder)
 	// logger.LogInfo("DELETE /api/v1/orders/:id route registered", logutil.Route("DELETE", "/api/v1/orders/:id"))
+
+	// Payment routes
+	v1.Get("/payments", paymentHandler.ListAllPayments)
+	logger.LogInfo("GET /api/v1/payments route registered", logutil.Route("GET", "/api/v1/payments"))
+
+	v1.Post("/payments", paymentHandler.CreatePayment)
+	logger.LogInfo("POST /api/v1/payments route registered", logutil.Route("POST", "/api/v1/payments"))
 
 	// Log routes
 	v1.Get("/logs", func(c *fiber.Ctx) error {
