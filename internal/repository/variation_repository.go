@@ -48,3 +48,25 @@ func (r *VariationRepository) DeleteVariation(id uuid.UUID) error {
 }
 
 // TODO Implement Function for Product Tied Variations
+
+// Helper Function
+func (r *VariationRepository) ProductExists(productID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.DB.Raw("SELECT EXISTS(SELECT 1 FROM products WHERE id = ?)", productID).Scan(&exists).Error
+	return exists, err
+}
+
+// GetVariationsByProductID fetches all variations for a specific product
+func (r *VariationRepository) GetVariationsByProductID(productID uuid.UUID) ([]domain.Variation, error) {
+	var variations []domain.Variation
+	err := r.DB.Where("product_id = ?", productID).Find(&variations).Error
+	if err != nil {
+		return nil, err
+	}
+	return variations, nil
+}
+
+// CreateProductVariation creates a new variation tied to a specific product
+func (r *VariationRepository) CreateProductVariation(variation *domain.Variation) error {
+	return r.DB.Create(variation).Error
+}

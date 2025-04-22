@@ -39,7 +39,10 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// Variation domain
 	variationRepo := &repository.VariationRepository{DB: db}
 	variationService := &service.VariationService{Repo: variationRepo}
-	variationHandler := &handler.VariationHandler{Service: variationService}
+	variationHandler := &handler.VariationHandler{
+		Service:        variationService,
+		ProductService: productService,
+	}
 
 	//* Core Domain
 
@@ -217,11 +220,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// TODO
 	// Variation Routes (Tied to a specific product)
 
-	// v1.Get("/products/:product_id/variations", variationHandler.ListVariations)
-	// logger.LogInfo("GET /api/v1/products/:product_id/variations route registered", logutil.Route("GET", "/api/v1/products/:product_id/variations"))
+	v1.Get("/products/:product_id/variations", variationHandler.GetProductVariations)
+	logger.LogInfo("GET /api/v1/products/:product_id/variations route registered", logutil.Route("GET", "/api/v1/products/:product_id/variations"))
 
-	// v1.Post("/products/:product_id/variations", variationHandler.CreateVariation)
-	// logger.LogInfo("POST /api/v1/products/:product_id/variations route registered", logutil.Route("POST", "/api/v1/products/:product_id/variations"))
+	v1.Post("/products/:product_id/variations", variationHandler.CreateProductVariation)
+	logger.LogInfo("POST /api/v1/products/:product_id/variations route registered", logutil.Route("POST", "/api/v1/products/:product_id/variations"))
 
 	// v1.Put("/products/:product_id/variations/:id", variationHandler.UpdateVariation)
 	// logger.LogInfo("PUT /api/v1/products/:product_id/variations/:id route registered", logutil.Route("PUT", "/api/v1/products/:product_id/variations/:id"))

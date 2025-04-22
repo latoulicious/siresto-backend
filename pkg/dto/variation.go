@@ -13,7 +13,7 @@ type CreateVariationRequest struct {
 }
 
 type UpdateVariationRequest struct {
-	ID            *uuid.UUID              `json:"id,omitempty"` // Change from string to *uuid.UUID
+	ID            *uuid.UUID              `json:"id,omitempty"`
 	IsDefault     *bool                   `json:"is_default,omitempty"`
 	IsAvailable   *bool                   `json:"is_available,omitempty"`
 	IsRequired    *bool                   `json:"is_required,omitempty"`
