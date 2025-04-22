@@ -12,8 +12,8 @@ type User struct {
 	Email       string    `gorm:"type:text;unique;not null"`
 	Password    string    `gorm:"type:text" json:"-"`
 	IsStaff     bool      `gorm:"default:false"`
-	RoleID      *int      `gorm:"foreignKey:RoleID"`
-	Role        []*Role   `gorm:"foreignKey:RoleID"`
+	RoleID      uuid.UUID
+	Role        *Role     `gorm:"foreignKey:RoleID"`
 	CreatedAt   time.Time `gorm:"default:now()"`
 	LastLoginAt *time.Time
 }
