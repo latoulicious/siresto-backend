@@ -233,8 +233,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
 
 	// Order routes
-	// v1.Get("/orders", orderHandler.ListAllOrders)
-	// logger.LogInfo("GET /api/v1/orders route registered", logutil.Route("GET", "/api/v1/orders"))
+	v1.Get("/orders", orderHandler.ListAllOrders)
+	logger.LogInfo("GET /api/v1/orders route registered", logutil.Route("GET", "/api/v1/orders"))
 
 	// v1.Get("/orders/:id", orderHandler.GetOrderByID)
 	// logger.LogInfo("GET /api/v1/orders/:id route registered", logutil.Route("GET", "/api/v1/orders/:id"))

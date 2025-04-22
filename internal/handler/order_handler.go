@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/service"
+	"github.com/latoulicious/siresto-backend/internal/utils"
 )
 
 type OrderRequest struct {
@@ -30,6 +31,14 @@ type CreateOrderRequest struct {
 
 type OrderHandler struct {
 	OrderService *service.OrderService
+}
+
+func (h *OrderHandler) ListAllOrders(c *fiber.Ctx) error {
+	orders, err := h.OrderService.ListAllOrders()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve orders", fiber.StatusInternalServerError))
+	}
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Orders retrieved successfully", orders))
 }
 
 func (handler *OrderHandler) CreateOrder(c *fiber.Ctx) error {

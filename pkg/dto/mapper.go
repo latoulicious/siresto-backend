@@ -325,3 +325,44 @@ func ToVariationOptionsDomainFromUpdate(options []UpdateVariationOption) db.Vari
 	}
 	return dbOptions
 }
+
+// Order DTO
+func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
+	items := make([]OrderItemDTO, 0, len(order.OrderDetails))
+
+	for _, detail := range order.OrderDetails {
+		variationName := ""
+		if detail.Variation != nil && len(detail.Variation.Options) > 0 {
+			for _, opt := range detail.Variation.Options {
+				if opt.IsDefault {
+					variationName = opt.Label
+					break
+				}
+			}
+		}
+
+		items = append(items, OrderItemDTO{
+			ID:          detail.ID.String(),
+			ProductID:   detail.ProductID.String(),
+			ProductName: detail.Product.Name,
+			Variation:   variationName,
+			Quantity:    detail.Quantity,
+			UnitPrice:   detail.Product.BasePrice,
+			TotalPrice:  float64(detail.Quantity) * detail.Product.BasePrice,
+			Note:        detail.Note,
+		})
+	}
+
+	return OrderResponseDTO{
+		ID:            order.ID.String(),
+		CustomerName:  order.CustomerName,
+		CustomerPhone: order.CustomerPhone,
+		TableNumber:   order.TableNumber,
+		Status:        string(order.Status),
+		TotalAmount:   float64(order.TotalAmount) / 100, // Assuming stored in cents
+		Notes:         order.Notes,
+		CreatedAt:     order.CreatedAt,
+		PaidAt:        order.PaidAt,
+		Items:         items,
+	}
+}

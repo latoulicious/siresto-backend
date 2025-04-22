@@ -12,6 +12,20 @@ type OrderRepository struct {
 	DB *gorm.DB
 }
 
+func (repo *OrderRepository) ListAllOrders() ([]domain.Order, error) {
+	var orders []domain.Order
+	if err := repo.DB.
+		Preload("OrderDetails").
+		Preload("OrderDetails.Product").
+		Preload("OrderDetails.Variation").
+		Preload("Payments").
+		Preload("Invoice").
+		Find(&orders).Error; err != nil {
+		return nil, err
+	}
+	return orders, nil
+}
+
 func (repo *OrderRepository) CreateOrder(order *domain.Order, orderDetails []domain.OrderDetail) (*domain.Order, error) {
 	// Start a transaction
 	tx := repo.DB.Begin()
@@ -67,5 +81,19 @@ func (repo *OrderRepository) GetOrderWithDetails(orderID uuid.UUID) (*domain.Ord
 		return nil, err
 	}
 
+	return &order, nil
+}
+
+func (r *OrderRepository) GetOrderWithAssociations(orderID uuid.UUID) (*domain.Order, error) {
+	var order domain.Order
+	if err := r.DB.
+		Preload("OrderDetails").
+		Preload("OrderDetails.Product").
+		Preload("OrderDetails.Variation").
+		Preload("Payments").
+		Preload("Invoice").
+		First(&order, "id = ?", orderID).Error; err != nil {
+		return nil, err
+	}
 	return &order, nil
 }

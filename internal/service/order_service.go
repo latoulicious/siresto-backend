@@ -11,29 +11,29 @@ type OrderService struct {
 	Repo *repository.OrderRepository
 }
 
-func (service *OrderService) CreateOrder(order *domain.Order, orderDetails []domain.OrderDetail) (*domain.Order, error) {
-	// Perform business validations
+func (s *OrderService) ListAllOrders() ([]domain.Order, error) {
+	// Call the repository method to fetch all orders
+	return s.Repo.ListAllOrders()
+}
+
+func (s *OrderService) CreateOrder(order *domain.Order, details []domain.OrderDetail) (*domain.Order, error) {
 	if order.CustomerName == "" || order.CustomerPhone == "" {
 		return nil, errors.New("missing required order fields")
 	}
 
-	// Calculate total amount from order details if not provided
 	if order.TotalAmount == 0 {
 		var total float64
-		for _, detail := range orderDetails {
+		for _, detail := range details {
 			total += detail.TotalPrice
 		}
 		order.TotalAmount = total
 	}
 
-	// Create the order and details in the repository
-	createdOrder, err := service.Repo.CreateOrder(order, orderDetails)
+	createdOrder, err := s.Repo.CreateOrder(order, details)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add logic to retrieve complete order with details if needed
-	// This would require enhancing OrderRepository with a getWithDetails method
-
-	return createdOrder, nil
+	// Fetch with all associations
+	return s.Repo.GetOrderWithAssociations(createdOrder.ID)
 }
