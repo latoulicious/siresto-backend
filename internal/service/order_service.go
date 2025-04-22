@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/repository"
 )
@@ -116,4 +117,39 @@ func calculateUnitPrice(detail *domain.OrderDetail) float64 {
 	}
 
 	return price
+}
+
+// internal/service/order_service.go - Add this method
+func (s *OrderService) GetOrderPaymentStatus(orderID uuid.UUID) (domain.OrderStatus, error) {
+	// Get order with payment details
+	order, err := s.Repo.GetOrderWithDetails(orderID)
+	if err != nil {
+		return "", err
+	}
+
+	// Return current order status
+	return order.Status, nil
+}
+
+// Add payment validation method
+func (s *OrderService) ValidatePaymentForOrder(orderID uuid.UUID, amount float64) error {
+	order, err := s.Repo.GetOrderWithDetails(orderID)
+	if err != nil {
+		return err
+	}
+
+	if order.Status == domain.OrderStatusPaid {
+		return errors.New("order already paid")
+	}
+
+	if order.Status == domain.OrderStatusCancelled {
+		return errors.New("cannot pay for cancelled order")
+	}
+
+	if order.TotalAmount != amount {
+		return fmt.Errorf("payment amount (%f) does not match order total (%f)",
+			amount, order.TotalAmount)
+	}
+
+	return nil
 }

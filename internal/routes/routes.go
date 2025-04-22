@@ -257,6 +257,12 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// v1.Delete("/orders/:id", orderHandler.DeleteOrder)
 	// logger.LogInfo("DELETE /api/v1/orders/:id route registered", logutil.Route("DELETE", "/api/v1/orders/:id"))
 
+	// Order Payment
+	v1.Post("/orders/:orderID/payments", paymentHandler.ProcessOrderPayment)
+	logger.LogInfo("POST /api/v1/orders/:orderID/payments route registered", logutil.Route("POST", "/api/v1/orders/:orderID/payments"))
+
+	// app.Get("/api/orders/:orderID/payments", paymentHandler.GetOrderPayments)
+
 	// Payment routes
 	v1.Get("/payments", paymentHandler.ListAllPayments)
 	logger.LogInfo("GET /api/v1/payments route registered", logutil.Route("GET", "/api/v1/payments"))
