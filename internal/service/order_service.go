@@ -188,3 +188,16 @@ func (s *OrderService) UpdateDishStatusToCompleted(orderID uuid.UUID) error {
 
 	return nil
 }
+
+func (s *OrderService) GetOrderByID(orderID uuid.UUID) (*domain.Order, error) {
+	return s.Repo.GetOrderWithAssociations(orderID)
+}
+
+func (s *OrderService) GetOrderPayments(orderID uuid.UUID) ([]domain.Payment, error) {
+	order, err := s.Repo.GetOrderWithAssociations(orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	return order.Payments, nil
+}

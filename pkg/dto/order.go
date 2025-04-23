@@ -15,6 +15,16 @@ type OrderResponseDTO struct {
 	CreatedAt     time.Time      `json:"createdAt"`
 	PaidAt        *time.Time     `json:"paidAt,omitempty"`
 	Items         []OrderItemDTO `json:"items"`
+	Payments      []PaymentDTO   `json:"payments,omitempty"`
+}
+
+type PaymentDTO struct {
+	ID             string    `json:"id"`
+	Method         string    `json:"method"`
+	Amount         float64   `json:"amount"`
+	Status         string    `json:"status"`
+	TransactionRef string    `json:"transaction_ref,omitempty"`
+	PaidAt         time.Time `json:"paid_at"`
 }
 
 // --- Response DTOs ---

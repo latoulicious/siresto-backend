@@ -36,7 +36,6 @@ func (h *PaymentHandler) CreatePayment(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(utils.Success("Payment created", payment))
 }
 
-// internal/handler/payment_handler.go
 func (h *PaymentHandler) ProcessOrderPayment(c *fiber.Ctx) error {
 	// Parse order ID from route parameter
 	orderID, err := uuid.Parse(c.Params("orderID"))

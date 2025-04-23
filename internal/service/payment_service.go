@@ -10,6 +10,12 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/repository"
 )
 
+var (
+	ErrOrderAlreadyPaid      = errors.New("order is already paid")
+	ErrOrderCancelled        = errors.New("cannot process payment for cancelled order")
+	ErrPaymentAmountMismatch = errors.New("payment amount does not match order total")
+)
+
 type PaymentService struct {
 	Repo *repository.PaymentRepository
 }

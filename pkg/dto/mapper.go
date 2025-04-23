@@ -382,6 +382,19 @@ func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
 		})
 	}
 
+	// Map payments - MOVED OUTSIDE the detail loop
+	payments := make([]PaymentDTO, 0, len(order.Payments))
+	for _, payment := range order.Payments {
+		payments = append(payments, PaymentDTO{
+			ID:             payment.ID.String(),
+			Method:         string(payment.Method),
+			Amount:         payment.Amount,
+			Status:         string(payment.Status),
+			TransactionRef: payment.TransactionRef,
+			PaidAt:         payment.PaidAt,
+		})
+	}
+
 	return OrderResponseDTO{
 		ID:            order.ID.String(),
 		CustomerName:  order.CustomerName,
@@ -394,7 +407,6 @@ func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
 		CreatedAt:     order.CreatedAt,
 		PaidAt:        order.PaidAt,
 		Items:         items,
+		Payments:      payments, // Now in scope
 	}
 }
-
-// User DTO
