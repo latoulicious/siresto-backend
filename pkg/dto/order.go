@@ -4,18 +4,18 @@ import "time"
 
 // --- Request DTOs ---
 type OrderResponseDTO struct {
-	ID            string         `json:"id"`
-	CustomerName  string         `json:"customerName"`
-	CustomerPhone string         `json:"customerPhone,omitempty"`
-	TableNumber   int            `json:"tableNumber"`
-	Status        string         `json:"status"`
-	DishStatus    string         `json:"dishStatus,omitempty"`
-	TotalAmount   float64        `json:"totalAmount"`
-	Notes         string         `json:"notes,omitempty"`
-	CreatedAt     time.Time      `json:"createdAt"`
-	PaidAt        *time.Time     `json:"paidAt,omitempty"`
-	Items         []OrderItemDTO `json:"items"`
-	Payments      []PaymentDTO   `json:"payments,omitempty"`
+	ID            string              `json:"id"`
+	CustomerName  string              `json:"customerName"`
+	CustomerPhone string              `json:"customerPhone,omitempty"`
+	TableNumber   int                 `json:"tableNumber"`
+	Status        string              `json:"status"`
+	DishStatus    string              `json:"dishStatus,omitempty"`
+	TotalAmount   float64             `json:"totalAmount"`
+	Notes         string              `json:"notes,omitempty"`
+	CreatedAt     time.Time           `json:"createdAt"`
+	PaidAt        *time.Time          `json:"paidAt,omitempty"`
+	Methods       []map[string]string `json:"paymentMethods"`
+	Items         []OrderItemDTO      `json:"items"`
 }
 
 type PaymentDTO struct {

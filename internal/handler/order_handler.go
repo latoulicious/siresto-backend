@@ -32,6 +32,7 @@ type OrderDetailRequest struct {
 type CreateOrderRequest struct {
 	Order        OrderRequest         `json:"order"`
 	OrderDetails []OrderDetailRequest `json:"order_details"`
+	Payments     []PaymentRequest     `json:"payments"`
 }
 
 type PaymentRequest struct {
@@ -97,6 +98,19 @@ func (handler *OrderHandler) CreateOrder(c *fiber.Ctx) error {
 
 	// Map to DTO before returning response
 	responseDTO := dto.MapToOrderResponseDTO(createdOrder)
+
+	// Add payment method information to response
+	paymentMethods := make([]map[string]string, 0)
+	if len(request.Payments) > 0 {
+		for _, payment := range request.Payments {
+			paymentMethods = append(paymentMethods, map[string]string{"method": payment.Method})
+		}
+	}
+
+	// Ensure to add paymentMethods to your responseDTO (assuming responseDTO has a field to hold payments)
+	if len(paymentMethods) > 0 {
+		responseDTO.Methods = paymentMethods
+	}
 
 	// Respond with the DTO instead of raw domain model
 	return c.Status(fiber.StatusCreated).JSON(responseDTO)
