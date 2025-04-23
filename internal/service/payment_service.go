@@ -80,7 +80,7 @@ func (s *PaymentService) ProcessOrderPayment(orderID uuid.UUID, payment *domain.
 	now := time.Now()
 	if err := tx.Model(&order).Updates(map[string]interface{}{
 		"status":      domain.OrderStatusPaid,
-		"dish_status": domain.FoodStatusDiproses, // Auto-transition to Diproses on payment
+		"dish_status": domain.FoodStatusInProcess, // Auto-transition to Diproses on payment
 		"paid_at":     now,
 	}).Error; err != nil {
 		tx.Rollback()

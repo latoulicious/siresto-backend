@@ -170,13 +170,13 @@ func (s *OrderService) UpdateDishStatusToCompleted(orderID uuid.UUID) error {
 	}
 
 	// Validate the current dish status - only allow transition from Diproses to Selesai
-	if order.DishStatus != domain.FoodStatusDiproses {
+	if order.DishStatus != domain.FoodStatusInProcess {
 		tx.Rollback()
-		return fmt.Errorf("dish status must be 'Diproses' to mark as completed, current status: %s", order.DishStatus)
+		return fmt.Errorf("dish status must be 'In Process' to mark as completed, current status: %s", order.DishStatus)
 	}
 
 	// Update to Selesai
-	if err := tx.Model(&order).Update("dish_status", domain.FoodStatusSelesai).Error; err != nil {
+	if err := tx.Model(&order).Update("dish_status", domain.FoodStatusCompleted).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to update dish status: %w", err)
 	}

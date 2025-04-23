@@ -10,15 +10,15 @@ type OrderStatus string
 type FoodStatus string
 
 const (
-	OrderStatusPending   OrderStatus = "PENDING"
-	OrderStatusPaid      OrderStatus = "PAID"
-	OrderStatusCancelled OrderStatus = "CANCELLED"
+	OrderStatusPending   OrderStatus = "Pending"
+	OrderStatusPaid      OrderStatus = "Paid"
+	OrderStatusCancelled OrderStatus = "Cancelled"
 )
 
 const (
-	FoodStatusDiterima FoodStatus = "Diterima"
-	FoodStatusDiproses FoodStatus = "Diproses"
-	FoodStatusSelesai  FoodStatus = "Selesai"
+	FoodStatusReceived  FoodStatus = "Received"
+	FoodStatusInProcess FoodStatus = "In Process"
+	FoodStatusCompleted FoodStatus = "Completed"
 )
 
 type Order struct {
