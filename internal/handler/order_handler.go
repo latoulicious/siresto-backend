@@ -60,6 +60,24 @@ func (h *OrderHandler) ListAllOrders(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Orders retrieved successfully", orderDTOs))
 }
 
+func (h *OrderHandler) GetOrderByID(c *fiber.Ctx) error {
+	orderID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid order ID", fiber.StatusBadRequest))
+	}
+
+	order, err := h.OrderService.GetOrderByID(orderID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(utils.Error("Order not found", fiber.StatusNotFound))
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve order", fiber.StatusInternalServerError))
+	}
+
+	orderDTO := dto.MapToOrderResponseDTO(order)
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Order retrieved successfully", orderDTO))
+}
+
 func (handler *OrderHandler) CreateOrder(c *fiber.Ctx) error {
 	// Parse the request using our custom request structs
 	var request CreateOrderRequest

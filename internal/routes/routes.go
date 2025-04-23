@@ -278,17 +278,14 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Get("/orders", orderHandler.ListAllOrders)
 	logger.LogInfo("GET /api/v1/orders route registered", logutil.Route("GET", "/api/v1/orders"))
 
-	// v1.Get("/orders/:id", orderHandler.GetOrderByID)
-	// logger.LogInfo("GET /api/v1/orders/:id route registered", logutil.Route("GET", "/api/v1/orders/:id"))
+	v1.Get("/orders/:id", orderHandler.GetOrderByID)
+	logger.LogInfo("GET /api/v1/orders/:id route registered", logutil.Route("GET", "/api/v1/orders/:id"))
 
 	v1.Post("/orders", orderHandler.CreateOrder)
 	logger.LogInfo("POST /api/v1/orders route registered", logutil.Route("POST", "/api/v1/orders"))
 
 	// v1.Put("/orders/:id", orderHandler.UpdateOrder)
 	// logger.LogInfo("PUT /api/v1/orders/:id route registered", logutil.Route("PUT", "/api/v1/orders/:id"))
-
-	// v1.Delete("/orders/:id", orderHandler.DeleteOrder)
-	// logger.LogInfo("DELETE /api/v1/orders/:id route registered", logutil.Route("DELETE", "/api/v1/orders/:id"))
 
 	v1.Post("/orders/:orderID/complete", orderHandler.MarkOrderAsCompleted)
 	logger.LogInfo("POST /api/v1/orders/:orderID/complete route registered", logutil.Route("POST", "/api/v1/orders/:orderID/complete"))
@@ -298,13 +295,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("POST /api/v1/orders/:orderID/payments route registered", logutil.Route("POST", "/api/v1/orders/:orderID/payments"))
 
 	// app.Get("/api/orders/:orderID/payments", paymentHandler.GetOrderPayments)
-
-	// Payment routes
-	v1.Get("/payments", paymentHandler.ListAllPayments)
-	logger.LogInfo("GET /api/v1/payments route registered", logutil.Route("GET", "/api/v1/payments"))
-
-	v1.Post("/payments", paymentHandler.CreatePayment)
-	logger.LogInfo("POST /api/v1/payments route registered", logutil.Route("POST", "/api/v1/payments"))
+	// logger.LogInfo("GET /api/v1/orders/:orderID/payments route registered", logutil.Route("GET", "/api/v1/orders/:orderID/payments"))
 
 	// Utility routes
 	v1.Get("/themes", themeHandler.ListAllThemes)

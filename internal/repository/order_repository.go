@@ -26,6 +26,14 @@ func (repo *OrderRepository) ListAllOrders() ([]domain.Order, error) {
 	return orders, nil
 }
 
+func (repo *OrderRepository) GetOrderByID(orderID uuid.UUID) (*domain.Order, error) {
+	var order domain.Order
+	if err := repo.DB.First(&order, "id = ?", orderID).Error; err != nil {
+		return nil, err
+	}
+	return &order, nil
+}
+
 func (repo *OrderRepository) CreateOrder(order *domain.Order, orderDetails []domain.OrderDetail) (*domain.Order, error) {
 	// Start a transaction
 	tx := repo.DB.Begin()
