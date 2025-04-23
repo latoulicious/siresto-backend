@@ -188,25 +188,21 @@ func (s *UserService) LoginUser(req *dto.LoginRequest) (*dto.UserLoginResponse, 
 
 // mapToUserResponse maps a domain user to a DTO
 func mapToUserResponse(user *domain.User) dto.UserResponse {
-	userDTO := dto.UserResponse{
+	role := dto.RoleInfo{}
+	if user.Role != nil {
+		role.ID = user.Role.ID
+		role.Name = user.Role.Name
+	}
+
+	return dto.UserResponse{
 		ID:          user.ID,
 		Name:        user.Name,
 		Email:       user.Email,
 		IsStaff:     user.IsStaff,
 		CreatedAt:   user.CreatedAt,
 		LastLoginAt: user.LastLoginAt,
+		Role:        role,
 	}
-
-	// Add role info if available
-	if user.RoleID != uuid.Nil {
-		// In a real implementation, you would fetch the role details
-		userDTO.Role = dto.RoleInfo{
-			ID:   user.RoleID,
-			Name: "Dummy Role", // Replace with actual role name from DB
-		}
-	}
-
-	return userDTO
 }
 
 // generateToken generates a JWT token for the user

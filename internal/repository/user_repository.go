@@ -34,7 +34,16 @@ func (r *UserRepository) CreateUser(user *domain.User) (*domain.User, error) {
 	if err := r.DB.Create(user).Error; err != nil {
 		return nil, err
 	}
-	return user, nil
+
+	// Preload role after creation
+	var createdUser domain.User
+	if err := r.DB.
+		Preload("Role").
+		First(&createdUser, "id = ?", user.ID).Error; err != nil {
+		return nil, err
+	}
+
+	return &createdUser, nil
 }
 
 func (r *UserRepository) UpdateUser(user *domain.User) (*domain.User, error) {
@@ -56,8 +65,7 @@ func (r *UserRepository) DeleteUser(id uuid.UUID) error {
 // LoginUser checks if the user exists and returns the user if found
 func (r *UserRepository) FindByEmail(email string) (*domain.User, error) {
 	var user domain.User
-	err := r.DB.Where("email = ?", email).First(&user).Error
-	if err != nil {
+	if err := r.DB.Preload("Role").Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
