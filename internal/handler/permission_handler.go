@@ -11,8 +11,8 @@ type PermissionHandler struct {
 	Service *service.PermissionService
 }
 
-func (h *PermissionHandler) ListAllRoles(c *fiber.Ctx) error {
-	permissions, err := h.Service.ListAllRoles()
+func (h *PermissionHandler) ListAllPermissions(c *fiber.Ctx) error {
+	permissions, err := h.Service.ListAllPermissions()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch permissions",
@@ -21,7 +21,7 @@ func (h *PermissionHandler) ListAllRoles(c *fiber.Ctx) error {
 	return c.JSON(permissions)
 }
 
-func (h *PermissionHandler) GetRoleByID(c *fiber.Ctx) error {
+func (h *PermissionHandler) GetPermissionByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	roleID, err := uuid.Parse(id)
 	if err != nil {
@@ -30,7 +30,7 @@ func (h *PermissionHandler) GetRoleByID(c *fiber.Ctx) error {
 		})
 	}
 
-	permission, err := h.Service.GetRoleByID(roleID)
+	permission, err := h.Service.GetPermissionByID(roleID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Permission not found",
@@ -39,7 +39,7 @@ func (h *PermissionHandler) GetRoleByID(c *fiber.Ctx) error {
 	return c.JSON(permission)
 }
 
-func (h *PermissionHandler) CreateRole(c *fiber.Ctx) error {
+func (h *PermissionHandler) CreatePermission(c *fiber.Ctx) error {
 	var permission domain.Permission
 	if err := c.BodyParser(&permission); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -47,7 +47,7 @@ func (h *PermissionHandler) CreateRole(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.Service.CreateRole(&permission); err != nil {
+	if err := h.Service.CreatePermission(&permission); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create permission",
 		})
@@ -55,7 +55,7 @@ func (h *PermissionHandler) CreateRole(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(permission)
 }
 
-func (h *PermissionHandler) UpdateRole(c *fiber.Ctx) error {
+func (h *PermissionHandler) UpdatePermission(c *fiber.Ctx) error {
 	id := c.Params("id")
 	roleID, err := uuid.Parse(id)
 	if err != nil {
@@ -72,7 +72,7 @@ func (h *PermissionHandler) UpdateRole(c *fiber.Ctx) error {
 	}
 
 	permission.ID = roleID
-	if err := h.Service.UpdateRole(&permission); err != nil {
+	if err := h.Service.UpdatePermission(&permission); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update permission",
 		})
@@ -80,7 +80,7 @@ func (h *PermissionHandler) UpdateRole(c *fiber.Ctx) error {
 	return c.JSON(permission)
 }
 
-func (h *PermissionHandler) DeleteRole(c *fiber.Ctx) error {
+func (h *PermissionHandler) DeletePermission(c *fiber.Ctx) error {
 	id := c.Params("id")
 	roleID, err := uuid.Parse(id)
 	if err != nil {
@@ -89,7 +89,7 @@ func (h *PermissionHandler) DeleteRole(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.Service.DeleteRole(roleID); err != nil {
+	if err := h.Service.DeletePermission(roleID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete permission",
 		})

@@ -1,52 +1,51 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/repository"
+	"gorm.io/gorm"
 )
 
 type PermissionService struct {
 	Repo *repository.PermissionRepository
+	DB   *gorm.DB
 }
 
-func (s *PermissionService) ListAllRoles() ([]domain.Permission, error) {
-	permissions, err := s.Repo.ListAllRoles()
-	if err != nil {
-		return nil, err
-	}
-	return permissions, nil
+// Fix method names to match entity
+func (s *PermissionService) ListAllPermissions() ([]domain.Permission, error) {
+	return s.Repo.ListAllPermissions()
 }
 
-func (s *PermissionService) GetRoleByID(id uuid.UUID) (*domain.Permission, error) {
-	permission, err := s.Repo.GetRoleByID(id)
-	if err != nil {
-		return nil, err
-	}
-	return permission, nil
+func (s *PermissionService) GetPermissionByID(id uuid.UUID) (*domain.Permission, error) {
+	return s.Repo.GetPermissionByID(id)
 }
 
-func (s *PermissionService) CreateRole(permission *domain.Permission) error {
+func (s *PermissionService) CreatePermission(permission *domain.Permission) error {
 	permission.ID = uuid.New()
-	err := s.Repo.CreateRole(permission)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.Repo.CreatePermission(permission)
 }
 
-func (s *PermissionService) UpdateRole(permission *domain.Permission) error {
-	err := s.Repo.UpdateRole(permission)
-	if err != nil {
-		return err
-	}
-	return nil
+func (s *PermissionService) UpdatePermission(permission *domain.Permission) error {
+	return s.Repo.UpdatePermission(permission)
 }
 
-func (s *PermissionService) DeleteRole(id uuid.UUID) error {
-	err := s.Repo.DeleteRole(id)
+func (s *PermissionService) DeletePermission(id uuid.UUID) error {
+	return s.Repo.DeletePermission(id)
+}
+
+func (s *PermissionService) GetPermissionsByIDs(ids []uuid.UUID) ([]domain.Permission, error) {
+	permissions, err := s.Repo.GetPermissionsByIDs(ids)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	// Verify we got all the permissions requested
+	if len(permissions) != len(ids) {
+		return nil, errors.New("one or more permissions not found")
+	}
+
+	return permissions, nil
 }
