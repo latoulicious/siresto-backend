@@ -167,6 +167,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Delete("/roles/:id", roleHandler.DeleteRole)
 	logger.LogInfo("DELETE /api/v1/roles/:id route registered", logutil.Route("DELETE", "/api/v1/roles/:id"))
 
+	// Roles Permission routes
+	v1.Post("/roles/:id/permissions", roleHandler.AddPermissionsToRole)
+	logger.LogInfo("POST /api/v1/roles/:id/permission route registered", logutil.Route("POST", "/api/v1/roles/:id/permission"))
+
+	v1.Delete("/roles/:id/permissions", roleHandler.RemovePermissionsFromRole)
+	logger.LogInfo("DELETE /api/v1/roles/:id/permission route registered", logutil.Route("DELETE", "/api/v1/roles/:id/permission"))
+
 	// Permission routes
 	v1.Get("/permissions", permissionHandler.ListAllPermissions)
 	logger.LogInfo("GET /api/v1/permissions route registered", logutil.Route("GET", "/api/v1/permissions"))

@@ -47,9 +47,6 @@ func (h *RoleHandler) CreateRole(c *fiber.Ctx) error {
 		})
 	}
 
-	// Validate request
-	// For production code, add proper validation library here
-
 	role, err := h.Service.CreateRole(&request)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -75,13 +72,62 @@ func (h *RoleHandler) UpdateRole(c *fiber.Ctx) error {
 		})
 	}
 
-	// Validate request
-	// For production code, add proper validation library here
-
 	role, err := h.Service.UpdateRole(roleID, &request)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update role: " + err.Error(),
+		})
+	}
+	return c.JSON(role)
+}
+
+// New handler method for adding permissions to a role
+func (h *RoleHandler) AddPermissionsToRole(c *fiber.Ctx) error {
+	id := c.Params("id")
+	roleID, err := uuid.Parse(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid role ID",
+		})
+	}
+
+	var request dto.RolePermissionUpdateRequest
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request payload",
+		})
+	}
+
+	role, err := h.Service.AddPermissionsToRole(roleID, request.Permissions)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to add permissions to role: " + err.Error(),
+		})
+	}
+	return c.JSON(role)
+}
+
+// New handler method for removing permissions from a role
+func (h *RoleHandler) RemovePermissionsFromRole(c *fiber.Ctx) error {
+	id := c.Params("id")
+	roleID, err := uuid.Parse(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid role ID",
+		})
+	}
+
+	var request dto.RolePermissionUpdateRequest
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request payload",
+		})
+	}
+
+	role, err := h.Service.RemovePermissionsFromRole(roleID, request.Permissions)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to remove permissions from role: " + err.Error(),
 		})
 	}
 	return c.JSON(role)

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/repository"
@@ -91,24 +93,23 @@ func (s *RoleService) UpdateRole(id uuid.UUID, req *dto.UpdateRoleRequest) (*dto
 		return nil, err
 	}
 
-	// Get permissions if specified
-	var permissions []domain.Permission
-	if len(req.Permissions) > 0 {
-		permissions, err = s.PermissionService.GetPermissionsByIDs(req.Permissions)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Update fields
+	// Update basic fields
 	existingRole.Name = req.Name
 	existingRole.Description = req.Description
 
-	// Clear and set new permissions
-	existingRole.Permissions = make([]*domain.Permission, len(permissions))
-	for i, p := range permissions {
-		pCopy := p // Create a copy to avoid pointer issues
-		existingRole.Permissions[i] = &pCopy
+	// Handle permissions replacement if specified
+	if req.Permissions != nil {
+		permissions, err := s.PermissionService.GetPermissionsByIDs(req.Permissions)
+		if err != nil {
+			return nil, err
+		}
+
+		// Clear and set new permissions
+		existingRole.Permissions = make([]*domain.Permission, len(permissions))
+		for i, p := range permissions {
+			pCopy := p // Create a copy to avoid pointer issues
+			existingRole.Permissions[i] = &pCopy
+		}
 	}
 
 	// Save changes
@@ -118,6 +119,102 @@ func (s *RoleService) UpdateRole(id uuid.UUID, req *dto.UpdateRoleRequest) (*dto
 
 	// Get updated role
 	updatedRole, err := s.Repo.GetRoleByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	response := mapRoleToResponse(updatedRole)
+	return &response, nil
+}
+
+// AddPermissionsToRole adds specific permissions to a role
+func (s *RoleService) AddPermissionsToRole(roleID uuid.UUID, permissionIDs []uuid.UUID) (*dto.RoleResponse, error) {
+	if len(permissionIDs) == 0 {
+		return nil, fmt.Errorf("no permissions specified to add")
+	}
+
+	// Get the permissions to add
+	newPermissions, err := s.PermissionService.GetPermissionsByIDs(permissionIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use transaction to ensure atomicity
+	err = s.DB.Transaction(func(tx *gorm.DB) error {
+		// Get existing role with its permissions
+		existingRole, err := s.Repo.GetRoleByID(roleID)
+		if err != nil {
+			return err
+		}
+
+		// Track existing permission IDs to avoid duplicates
+		existingPermIDs := make(map[uuid.UUID]bool)
+		for _, perm := range existingRole.Permissions {
+			existingPermIDs[perm.ID] = true
+		}
+
+		// Add permissions that don't already exist in the role
+		for _, newPerm := range newPermissions {
+			if !existingPermIDs[newPerm.ID] {
+				permCopy := newPerm // Create a copy to avoid pointer issues
+				existingRole.Permissions = append(existingRole.Permissions, &permCopy)
+				existingPermIDs[newPerm.ID] = true
+			}
+		}
+
+		return s.Repo.UpdateRole(existingRole)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the updated role with preloaded permissions
+	updatedRole, err := s.Repo.GetRoleByID(roleID)
+	if err != nil {
+		return nil, err
+	}
+
+	response := mapRoleToResponse(updatedRole)
+	return &response, nil
+}
+
+// RemovePermissionsFromRole removes specific permissions from a role
+func (s *RoleService) RemovePermissionsFromRole(roleID uuid.UUID, permissionIDs []uuid.UUID) (*dto.RoleResponse, error) {
+	if len(permissionIDs) == 0 {
+		return nil, fmt.Errorf("no permissions specified to remove")
+	}
+
+	// Get existing role with its permissions
+	existingRole, err := s.Repo.GetRoleByID(roleID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to map for faster lookup
+	toRemove := make(map[uuid.UUID]bool)
+	for _, id := range permissionIDs {
+		toRemove[id] = true
+	}
+
+	// Filter out permissions that should be removed
+	updatedPermissions := make([]*domain.Permission, 0)
+	for _, perm := range existingRole.Permissions {
+		if !toRemove[perm.ID] {
+			updatedPermissions = append(updatedPermissions, perm)
+		}
+	}
+
+	// Update role with filtered permissions
+	existingRole.Permissions = updatedPermissions
+
+	// Save changes
+	if err := s.Repo.UpdateRole(existingRole); err != nil {
+		return nil, err
+	}
+
+	// Get updated role
+	updatedRole, err := s.Repo.GetRoleByID(roleID)
 	if err != nil {
 		return nil, err
 	}

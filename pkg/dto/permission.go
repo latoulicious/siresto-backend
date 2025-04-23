@@ -14,7 +14,12 @@ type CreateRoleRequest struct {
 type UpdateRoleRequest struct {
 	Name        string      `json:"name" validate:"required"`
 	Description string      `json:"description"`
-	Permissions []uuid.UUID `json:"permissions"`
+	Permissions []uuid.UUID `json:"permissions,omitempty"`
+}
+
+// New DTOs for permission operations
+type RolePermissionUpdateRequest struct {
+	Permissions []uuid.UUID `json:"permissions" validate:"required,min=1"`
 }
 
 // Response DTOs
