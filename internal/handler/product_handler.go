@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/service"
 	"github.com/latoulicious/siresto-backend/internal/utils"
-	"github.com/latoulicious/siresto-backend/internal/validator"
 	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
@@ -56,7 +55,7 @@ func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
 	product := dto.ToProductDomainFromCreate(&body)
 
 	// Validate the domain model (since we expect CategoryID and other fields to be in PascalCase inside the domain)
-	if err := validator.ValidateProduct(h.Service.Repo.DB, product); err != nil {
+	if err := service.ValidateProduct(h.Service.Repo.DB, product); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Validation failed: "+err.Error(), fiber.StatusBadRequest))
 	}
 
@@ -99,7 +98,7 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 	updatedProduct := dto.ToProductDomainFromUpdate(&body, existingProduct)
 
 	// Validate the updated product
-	if err := validator.ValidateProductForUpdate(h.Service.Repo.DB, updatedProduct); err != nil {
+	if err := service.ValidateProductForUpdate(h.Service.Repo.DB, updatedProduct); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Validation failed: "+err.Error(), fiber.StatusBadRequest))
 	}
 
@@ -132,7 +131,7 @@ func (h *ProductHandler) DeleteProduct(c *fiber.Ctx) error {
 	}
 
 	// Validate if deletable
-	if err := validator.ValidateProductDeletable(h.Service.Repo.DB, id); err != nil {
+	if err := service.ValidateProductDeletable(h.Service.Repo.DB, id); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Validation failed: "+err.Error(), fiber.StatusBadRequest))
 	}
 

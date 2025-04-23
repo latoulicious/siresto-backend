@@ -1,13 +1,14 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/repository"
-	"github.com/latoulicious/siresto-backend/internal/validator"
 	"github.com/latoulicious/siresto-backend/pkg/dto"
+	"gorm.io/gorm"
 )
 
 type ProductService struct {
@@ -32,7 +33,7 @@ func (s ProductService) CreateProduct(product *domain.Product) (*domain.Product,
 	}
 
 	// Perform validation
-	if err := validator.ValidateProduct(s.Repo.DB, product); err != nil {
+	if err := ValidateProduct(s.Repo.DB, product); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
@@ -97,7 +98,7 @@ func (s *ProductService) UpdateProduct(id uuid.UUID, update *domain.Product) (*d
 	}
 
 	// Perform validation
-	if err := validator.ValidateProductForUpdate(s.Repo.DB, update); err != nil {
+	if err := ValidateProductForUpdate(s.Repo.DB, update); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
@@ -252,10 +253,77 @@ func (s *ProductService) UpdateProductWithVariations(id uuid.UUID, product *doma
 // DeleteProduct removes a product by its ID from the repository
 func (s *ProductService) DeleteProduct(id uuid.UUID) error {
 	// Perform deletability validation
-	if err := validator.ValidateProductDeletable(s.Repo.DB, id); err != nil {
+	if err := ValidateProductDeletable(s.Repo.DB, id); err != nil {
 		return fmt.Errorf("product cannot be deleted: %w", err)
 	}
 
 	// Proceed with deletion
 	return s.Repo.DeleteProduct(id)
+}
+
+// Helper Function
+
+var (
+	ErrMissingCategoryID = errors.New("CategoryID is required")
+	ErrInvalidBasePrice  = errors.New("BasePrice must be greater than 0")
+	ErrEmptyName         = errors.New("Product name cannot be empty")
+	ErrCategoryNotFound  = errors.New("Category does not exist")
+)
+
+// ValidateProduct performs all validation on a product for creation or update
+func ValidateProduct(db *gorm.DB, p *domain.Product) error {
+	if p.CategoryID == nil || *p.CategoryID == uuid.Nil {
+		return ErrMissingCategoryID
+	}
+	if p.Name == "" {
+		return ErrEmptyName
+	}
+	if p.BasePrice <= 0 {
+		return ErrInvalidBasePrice
+	}
+	exists, err := repository.CategoryExists(db, *p.CategoryID)
+	if err != nil {
+		return fmt.Errorf("error checking category: %w", err)
+	}
+	if !exists {
+		return ErrCategoryNotFound
+	}
+	return nil
+}
+
+// ValidateProductForUpdate performs validation on a product for update
+func ValidateProductForUpdate(db *gorm.DB, p *domain.Product) error {
+	if p.Name == "" {
+		return ErrEmptyName
+	}
+	if p.BasePrice <= 0 {
+		return ErrInvalidBasePrice
+	}
+	// only check category if it's explicitly allowed to change
+	if p.CategoryID != nil && *p.CategoryID != uuid.Nil {
+		exists, err := repository.CategoryExists(db, *p.CategoryID)
+		if err != nil {
+			return fmt.Errorf("error checking category: %w", err)
+		}
+		if !exists {
+			return ErrCategoryNotFound
+		}
+	}
+	return nil
+}
+
+// ValidateProductDeletable ensures the product can be safely deleted
+func ValidateProductDeletable(db *gorm.DB, productID uuid.UUID) error {
+	var count int64
+	if err := db.Model(&domain.Variation{}).
+		Where("product_id = ?", productID).
+		Count(&count).Error; err != nil {
+		return fmt.Errorf("error checking related variations: %w", err)
+	}
+
+	if count > 0 {
+		return fmt.Errorf("cannot delete product: %d associated variations found", count)
+	}
+
+	return nil
 }
