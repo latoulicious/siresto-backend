@@ -90,37 +90,54 @@ func (s *RoleService) UpdateRole(id uuid.UUID, req *dto.UpdateRoleRequest) (*dto
 	// Get existing role
 	existingRole, err := s.Repo.GetRoleByID(id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get role: %w", err)
 	}
 
 	// Update basic fields
 	existingRole.Name = req.Name
 	existingRole.Description = req.Description
 
-	// Handle permissions replacement if specified
-	if req.Permissions != nil {
-		permissions, err := s.PermissionService.GetPermissionsByIDs(req.Permissions)
-		if err != nil {
-			return nil, err
-		}
-
-		// Clear and set new permissions
-		existingRole.Permissions = make([]*domain.Permission, len(permissions))
-		for i, p := range permissions {
-			pCopy := p // Create a copy to avoid pointer issues
-			existingRole.Permissions[i] = &pCopy
-		}
+	// Always handle permissions explicitly - empty array will clear permissions
+	permissions, err := s.PermissionService.GetPermissionsByIDs(req.Permissions)
+	if err != nil && len(req.Permissions) > 0 {
+		return nil, fmt.Errorf("failed to get permissions: %w", err)
 	}
 
-	// Save changes
-	if err := s.Repo.UpdateRole(existingRole); err != nil {
-		return nil, err
-	}
+	// Use transaction to ensure atomicity
+	err = s.DB.Transaction(func(tx *gorm.DB) error {
+		// Clear existing permissions
+		if err := tx.Model(existingRole).Association("Permissions").Clear(); err != nil {
+			return fmt.Errorf("failed to clear permissions: %w", err)
+		}
 
-	// Get updated role
-	updatedRole, err := s.Repo.GetRoleByID(id)
+		// Add new permissions if any
+		if len(permissions) > 0 {
+			permPtrs := make([]*domain.Permission, 0, len(permissions))
+			for i := range permissions {
+				permPtrs = append(permPtrs, &permissions[i]) // Store pointer to array element
+			}
+
+			if err := tx.Model(existingRole).Association("Permissions").Append(permPtrs); err != nil {
+				return fmt.Errorf("failed to add permissions: %w", err)
+			}
+		}
+
+		// Update the role itself
+		if err := tx.Save(existingRole).Error; err != nil {
+			return fmt.Errorf("failed to save role: %w", err)
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
+	}
+
+	// Get the updated role with all associations loaded
+	updatedRole, err := s.Repo.GetRoleByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get updated role: %w", err)
 	}
 
 	response := mapRoleToResponse(updatedRole)

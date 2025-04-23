@@ -12,9 +12,9 @@ type CreateRoleRequest struct {
 }
 
 type UpdateRoleRequest struct {
-	Name        string      `json:"name" validate:"required"`
+	Name        string      `json:"name"`
 	Description string      `json:"description"`
-	Permissions []uuid.UUID `json:"permissions,omitempty"`
+	Permissions []uuid.UUID `json:"permissions"`
 }
 
 // New DTOs for permission operations

@@ -31,15 +31,22 @@ func (r *RoleRepository) CreateRole(role *domain.Role, tx *gorm.DB) error {
 }
 
 func (r *RoleRepository) UpdateRole(role *domain.Role) error {
-	// Start a transaction
+	// Perform update in a transaction to maintain data integrity
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		// Clear existing permission associations
-		if err := tx.Model(role).Association("Permissions").Clear(); err != nil {
+		// First update the role itself (without associations)
+		if err := tx.Model(role).Omit("Permissions").Updates(map[string]interface{}{
+			"name":        role.Name,
+			"description": role.Description,
+		}).Error; err != nil {
 			return err
 		}
 
-		// Save the role with updated permissions
-		return tx.Save(role).Error
+		// Handle permission associations manually for better control
+		if err := tx.Model(role).Association("Permissions").Replace(role.Permissions); err != nil {
+			return err
+		}
+
+		return nil
 	})
 }
 
