@@ -12,47 +12,66 @@ type RoleRepository struct {
 
 func (r *RoleRepository) ListAllRoles() ([]domain.Role, error) {
 	var roles []domain.Role
-	err := r.DB.Find(&roles).Error
-	if err != nil {
-		return nil, err
-	}
-	return roles, nil
+	err := r.DB.Preload("Permissions").Find(&roles).Error
+	return roles, err
 }
 
 func (r *RoleRepository) GetRoleByID(id uuid.UUID) (*domain.Role, error) {
 	var role domain.Role
-	err := r.DB.First(&role, "id = ?", id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &role, nil
+	err := r.DB.Preload("Permissions").First(&role, "id = ?", id).Error
+	return &role, err
 }
 
-func (r *RoleRepository) CreateRole(role *domain.Role) error {
-	err := r.DB.Create(role).Error
-	if err != nil {
-		return err
+func (r *RoleRepository) CreateRole(role *domain.Role, tx *gorm.DB) error {
+	db := r.DB
+	if tx != nil {
+		db = tx
 	}
-	return nil
+	return db.Create(role).Error
 }
 
 func (r *RoleRepository) UpdateRole(role *domain.Role) error {
-	err := r.DB.Save(role).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	// Start a transaction
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		// Clear existing permission associations
+		if err := tx.Model(role).Association("Permissions").Clear(); err != nil {
+			return err
+		}
+
+		// Save the role with updated permissions
+		return tx.Save(role).Error
+	})
 }
 
 func (r *RoleRepository) DeleteRole(id uuid.UUID) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		// Get the role first
+		var role domain.Role
+		if err := tx.First(&role, "id = ?", id).Error; err != nil {
+			return err
+		}
+
+		// Clear permission associations
+		if err := tx.Model(&role).Association("Permissions").Clear(); err != nil {
+			return err
+		}
+
+		// Delete the role
+		return tx.Delete(&role).Error
+	})
+}
+
+// New method to set role permissions
+func (r *RoleRepository) SetRolePermissions(roleID uuid.UUID, permissions []domain.Permission, tx *gorm.DB) error {
+	db := r.DB
+	if tx != nil {
+		db = tx
+	}
+
 	var role domain.Role
-	err := r.DB.First(&role, "id = ?", id).Error
-	if err != nil {
+	if err := db.First(&role, "id = ?", roleID).Error; err != nil {
 		return err
 	}
-	err = r.DB.Delete(&role).Error
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return db.Model(&role).Association("Permissions").Replace(permissions)
 }

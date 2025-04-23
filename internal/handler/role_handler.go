@@ -3,8 +3,8 @@ package handler
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/service"
+	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
 type RoleHandler struct {
@@ -40,16 +40,20 @@ func (h *RoleHandler) GetRoleByID(c *fiber.Ctx) error {
 }
 
 func (h *RoleHandler) CreateRole(c *fiber.Ctx) error {
-	var role domain.Role
-	if err := c.BodyParser(&role); err != nil {
+	var request dto.CreateRoleRequest
+	if err := c.BodyParser(&request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
 
-	if err := h.Service.CreateRole(&role); err != nil {
+	// Validate request
+	// For production code, add proper validation library here
+
+	role, err := h.Service.CreateRole(&request)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create role",
+			"error": "Failed to create role: " + err.Error(),
 		})
 	}
 	return c.Status(fiber.StatusCreated).JSON(role)
@@ -64,17 +68,20 @@ func (h *RoleHandler) UpdateRole(c *fiber.Ctx) error {
 		})
 	}
 
-	var role domain.Role
-	if err := c.BodyParser(&role); err != nil {
+	var request dto.UpdateRoleRequest
+	if err := c.BodyParser(&request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
 
-	role.ID = roleID
-	if err := h.Service.UpdateRole(&role); err != nil {
+	// Validate request
+	// For production code, add proper validation library here
+
+	role, err := h.Service.UpdateRole(roleID, &request)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update role",
+			"error": "Failed to update role: " + err.Error(),
 		})
 	}
 	return c.JSON(role)
@@ -91,7 +98,7 @@ func (h *RoleHandler) DeleteRole(c *fiber.Ctx) error {
 
 	if err := h.Service.DeleteRole(roleID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete role",
+			"error": "Failed to delete role: " + err.Error(),
 		})
 	}
 	return c.SendStatus(fiber.StatusNoContent)

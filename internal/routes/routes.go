@@ -53,9 +53,18 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	userService := &service.UserService{Repo: userRepo}
 	userHandler := handler.NewUserHandler(userService, validate)
 
+	// Permission domain
+	permissionRepo := &repository.PermissionRepository{DB: db}
+	permissionService := &service.PermissionService{Repo: permissionRepo}
+	permissionHandler := &handler.PermissionHandler{Service: permissionService}
+
 	// Role domain
 	roleRepo := &repository.RoleRepository{DB: db}
-	roleService := &service.RoleService{Repo: roleRepo}
+	roleService := &service.RoleService{
+		Repo:              roleRepo,
+		PermissionService: permissionService,
+		DB:                db,
+	}
 	roleHandler := &handler.RoleHandler{Service: roleService}
 
 	// Order domain
@@ -157,6 +166,22 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	v1.Delete("/roles/:id", roleHandler.DeleteRole)
 	logger.LogInfo("DELETE /api/v1/roles/:id route registered", logutil.Route("DELETE", "/api/v1/roles/:id"))
+
+	// Permission routes
+	v1.Get("/permissions", permissionHandler.ListAllPermissions)
+	logger.LogInfo("GET /api/v1/permissions route registered", logutil.Route("GET", "/api/v1/permissions"))
+
+	v1.Get("/permissions/:id", permissionHandler.GetPermissionByID)
+	logger.LogInfo("GET /api/v1/permissions/:id route registered", logutil.Route("GET", "/api/v1/permissions/:id"))
+
+	v1.Post("/permissions", permissionHandler.CreatePermission)
+	logger.LogInfo("POST /api/v1/permissions route registered", logutil.Route("POST", "/api/v1/permissions"))
+
+	v1.Put("/permissions/:id", permissionHandler.UpdatePermission)
+	logger.LogInfo("PUT /api/v1/permissions/:id route registered", logutil.Route("PUT", "/api/v1/permissions/:id"))
+
+	v1.Delete("/permissions/:id", permissionHandler.DeletePermission)
+	logger.LogInfo("DELETE /api/v1/permissions/:id route registered", logutil.Route("DELETE", "/api/v1/permissions/:id"))
 
 	// QR Code routes
 	v1.Get("/qr-codes", qrHandler.ListAllQRCodesHandler)
@@ -274,18 +299,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Post("/payments", paymentHandler.CreatePayment)
 	logger.LogInfo("POST /api/v1/payments route registered", logutil.Route("POST", "/api/v1/payments"))
 
-	// Log routes
-	v1.Get("/logs", func(c *fiber.Ctx) error {
-		var logs []domain.Log
-		if err := db.Find(&logs).Error; err != nil {
-			logger.LogError("Failed to fetch logs", logutil.Route("GET", "/api/v1/logs"))
-			return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve Logs", fiber.StatusInternalServerError))
-		}
-
-		return c.Status(fiber.StatusOK).JSON(utils.Success("Logs fetched successfully", logs))
-	})
-	logger.LogInfo("GET /api/v1/logs route registered", logutil.Route("GET", "/api/v1/logs"))
-
 	// Utility routes
 	v1.Get("/themes", themeHandler.ListAllThemes)
 	logger.LogInfo("GET /api/v1/themes route registered", logutil.Route("GET", "/api/v1/themes"))
@@ -301,4 +314,16 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	v1.Delete("/themes/:id", themeHandler.DeleteTheme)
 	logger.LogInfo("DELETE /api/v1/themes/:id route registered", logutil.Route("DELETE", "/api/v1/themes/:id"))
+
+	// Log routes
+	v1.Get("/logs", func(c *fiber.Ctx) error {
+		var logs []domain.Log
+		if err := db.Find(&logs).Error; err != nil {
+			logger.LogError("Failed to fetch logs", logutil.Route("GET", "/api/v1/logs"))
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve Logs", fiber.StatusInternalServerError))
+		}
+
+		return c.Status(fiber.StatusOK).JSON(utils.Success("Logs fetched successfully", logs))
+	})
+	logger.LogInfo("GET /api/v1/logs route registered", logutil.Route("GET", "/api/v1/logs"))
 }
