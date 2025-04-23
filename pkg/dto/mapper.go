@@ -396,3 +396,5 @@ func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
 		Items:         items,
 	}
 }
+
+// User DTO

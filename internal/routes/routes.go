@@ -3,6 +3,7 @@ package routes
 import (
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/handler"
@@ -47,9 +48,10 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	//* Core Domain
 
 	// User domain
+	validate := validator.New()
 	userRepo := &repository.UserRepository{DB: db}
 	userService := &service.UserService{Repo: userRepo}
-	userHandler := &handler.UserHandler{Service: userService}
+	userHandler := handler.NewUserHandler(userService, validate)
 
 	// Role domain
 	roleRepo := &repository.RoleRepository{DB: db}
