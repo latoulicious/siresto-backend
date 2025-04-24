@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type R2Uploader struct {
@@ -36,11 +38,51 @@ func NewR2Uploader(accessKey, secretKey, endpoint, region, bucketName, baseURL s
 	}
 
 	client := s3.NewFromConfig(cfg)
-	return &R2Uploader{
+	uploader := &R2Uploader{
 		Client:     client,
 		BucketName: bucketName,
 		BaseURL:    baseURL,
-	}, nil
+	}
+
+	// Configure CORS for the bucket
+	if err := uploader.ConfigureCORS(); err != nil {
+		log.Printf("Warning: Failed to configure CORS for bucket %s: %v", bucketName, err)
+		// Continue anyway - don't fail initialization
+	}
+
+	return uploader, nil
+}
+
+// ConfigureCORS sets up CORS configuration for the R2 bucket
+// This configuration applies to all objects in the bucket, both existing and new uploads
+func (u *R2Uploader) ConfigureCORS() error {
+	corsConfig := &s3.PutBucketCorsInput{
+		Bucket: aws.String(u.BucketName),
+		CORSConfiguration: &types.CORSConfiguration{
+			CORSRules: []types.CORSRule{
+				{
+					AllowedHeaders: []string{"*"},
+					AllowedMethods: []string{"GET", "HEAD", "PUT", "POST", "DELETE"},
+					// Allow the specific frontend domain instead of wildcard
+					AllowedOrigins: []string{
+						"http://localhost:41234",
+						"http://127.0.0.1:41234",
+						"*", // Keep wildcard for testing but remove in production
+					},
+					ExposeHeaders: []string{"ETag"},
+					MaxAgeSeconds: aws.Int32(3600),
+				},
+			},
+		},
+	}
+
+	_, err := u.Client.PutBucketCors(context.TODO(), corsConfig)
+	if err != nil {
+		return fmt.Errorf("failed to set CORS configuration: %w", err)
+	}
+
+	log.Printf("Successfully configured CORS for bucket: %s", u.BucketName)
+	return nil
 }
 
 func (u *R2Uploader) Upload(file io.Reader, filename string) (string, error) {
