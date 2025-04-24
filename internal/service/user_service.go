@@ -171,8 +171,16 @@ func (s *UserService) LoginUser(req *dto.LoginRequest) (*dto.UserLoginResponse, 
 	// Create user response
 	userResponse := mapToUserResponse(user)
 
-	// Generate JWT token
-	token, err := jwt.GenerateToken(user.ID)
+	// Extract role information for JWT
+	roleID := uuid.Nil
+	roleName := ""
+	if user.Role != nil {
+		roleID = user.Role.ID
+		roleName = user.Role.Name
+	}
+
+	// Generate JWT token with role information
+	token, err := jwt.GenerateToken(user.ID, roleID, roleName, user.IsStaff)
 	if err != nil {
 		return nil, err
 	}

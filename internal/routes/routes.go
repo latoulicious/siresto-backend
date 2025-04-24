@@ -162,60 +162,62 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// Protected routes
 	protected := v1.Use(middleware.Protected())
 
-	// User routes
-	protected.Get("/users", userHandler.ListAllUsers)
-	logger.LogInfo("GET /api/v1/users route registered", logutil.Route("GET", "/api/v1/users"))
+	// User routes - Admin only
+	adminRoutes := protected.Use(middleware.RequireAdmin())
+	adminRoutes.Get("/users", userHandler.ListAllUsers)
+	logger.LogInfo("GET /api/v1/users route registered (admin)", logutil.Route("GET", "/api/v1/users"))
 
+	adminRoutes.Post("/users", userHandler.CreateUser)
+	logger.LogInfo("POST /api/v1/users route registered (admin)", logutil.Route("POST", "/api/v1/users"))
+
+	adminRoutes.Put("/users/:id", userHandler.UpdateUser)
+	logger.LogInfo("PUT /api/v1/users/:id route registered (admin)", logutil.Route("PUT", "/api/v1/users/:id"))
+
+	adminRoutes.Delete("/users/:id", userHandler.DeleteUser)
+	logger.LogInfo("DELETE /api/v1/users/:id route registered (admin)", logutil.Route("DELETE", "/api/v1/users/:id"))
+
+	// User profile - Any authenticated user can access their own profile
 	protected.Get("/users/:id", userHandler.GetUserByID)
 	logger.LogInfo("GET /api/v1/users/:id route registered", logutil.Route("GET", "/api/v1/users/:id"))
 
-	protected.Post("/users", userHandler.CreateUser)
-	logger.LogInfo("POST /api/v1/users route registered", logutil.Route("POST", "/api/v1/users"))
+	// Role & Permission routes - Admin only
+	adminRoutes.Get("/roles", roleHandler.ListAllRoles)
+	logger.LogInfo("GET /api/v1/roles route registered (admin)", logutil.Route("GET", "/api/v1/roles"))
 
-	protected.Put("/users/:id", userHandler.UpdateUser)
-	logger.LogInfo("PUT /api/v1/users/:id route registered", logutil.Route("PUT", "/api/v1/users/:id"))
+	adminRoutes.Get("/roles/:id", roleHandler.GetRoleByID)
+	logger.LogInfo("GET /api/v1/roles/:id route registered (admin)", logutil.Route("GET", "/api/v1/roles/:id"))
 
-	protected.Delete("/users/:id", userHandler.DeleteUser)
-	logger.LogInfo("DELETE /api/v1/users/:id route registered", logutil.Route("DELETE", "/api/v1/users/:id"))
+	adminRoutes.Post("/roles", roleHandler.CreateRole)
+	logger.LogInfo("POST /api/v1/roles route registered (admin)", logutil.Route("POST", "/api/v1/roles"))
 
-	// Role routes
-	protected.Get("/roles", roleHandler.ListAllRoles)
-	logger.LogInfo("GET /api/v1/roles route registered", logutil.Route("GET", "/api/v1/roles"))
+	adminRoutes.Put("/roles/:id", roleHandler.UpdateRole)
+	logger.LogInfo("PUT /api/v1/roles/:id route registered (admin)", logutil.Route("PUT", "/api/v1/roles/:id"))
 
-	protected.Get("/roles/:id", roleHandler.GetRoleByID)
-	logger.LogInfo("GET /api/v1/roles/:id route registered", logutil.Route("GET", "/api/v1/roles/:id"))
+	adminRoutes.Delete("/roles/:id", roleHandler.DeleteRole)
+	logger.LogInfo("DELETE /api/v1/roles/:id route registered (admin)", logutil.Route("DELETE", "/api/v1/roles/:id"))
 
-	protected.Post("/roles", roleHandler.CreateRole)
-	logger.LogInfo("POST /api/v1/roles route registered", logutil.Route("POST", "/api/v1/roles"))
+	// Roles Permission routes - Admin only
+	adminRoutes.Post("/roles/:id/permissions", roleHandler.AddPermissionsToRole)
+	logger.LogInfo("POST /api/v1/roles/:id/permission route registered (admin)", logutil.Route("POST", "/api/v1/roles/:id/permission"))
 
-	protected.Put("/roles/:id", roleHandler.UpdateRole)
-	logger.LogInfo("PUT /api/v1/roles/:id route registered", logutil.Route("PUT", "/api/v1/roles/:id"))
+	adminRoutes.Delete("/roles/:id/permissions", roleHandler.RemovePermissionsFromRole)
+	logger.LogInfo("DELETE /api/v1/roles/:id/permission route registered (admin)", logutil.Route("DELETE", "/api/v1/roles/:id/permission"))
 
-	protected.Delete("/roles/:id", roleHandler.DeleteRole)
-	logger.LogInfo("DELETE /api/v1/roles/:id route registered", logutil.Route("DELETE", "/api/v1/roles/:id"))
+	// Permission routes - Admin only
+	adminRoutes.Get("/permissions", permissionHandler.ListAllPermissions)
+	logger.LogInfo("GET /api/v1/permissions route registered (admin)", logutil.Route("GET", "/api/v1/permissions"))
 
-	// Roles Permission routes
-	protected.Post("/roles/:id/permissions", roleHandler.AddPermissionsToRole)
-	logger.LogInfo("POST /api/v1/roles/:id/permission route registered", logutil.Route("POST", "/api/v1/roles/:id/permission"))
+	adminRoutes.Get("/permissions/:id", permissionHandler.GetPermissionByID)
+	logger.LogInfo("GET /api/v1/permissions/:id route registered (admin)", logutil.Route("GET", "/api/v1/permissions/:id"))
 
-	protected.Delete("/roles/:id/permissions", roleHandler.RemovePermissionsFromRole)
-	logger.LogInfo("DELETE /api/v1/roles/:id/permission route registered", logutil.Route("DELETE", "/api/v1/roles/:id/permission"))
+	adminRoutes.Post("/permissions", permissionHandler.CreatePermission)
+	logger.LogInfo("POST /api/v1/permissions route registered (admin)", logutil.Route("POST", "/api/v1/permissions"))
 
-	// Permission routes
-	protected.Get("/permissions", permissionHandler.ListAllPermissions)
-	logger.LogInfo("GET /api/v1/permissions route registered", logutil.Route("GET", "/api/v1/permissions"))
+	adminRoutes.Put("/permissions/:id", permissionHandler.UpdatePermission)
+	logger.LogInfo("PUT /api/v1/permissions/:id route registered (admin)", logutil.Route("PUT", "/api/v1/permissions/:id"))
 
-	protected.Get("/permissions/:id", permissionHandler.GetPermissionByID)
-	logger.LogInfo("GET /api/v1/permissions/:id route registered", logutil.Route("GET", "/api/v1/permissions/:id"))
-
-	protected.Post("/permissions", permissionHandler.CreatePermission)
-	logger.LogInfo("POST /api/v1/permissions route registered", logutil.Route("POST", "/api/v1/permissions"))
-
-	protected.Put("/permissions/:id", permissionHandler.UpdatePermission)
-	logger.LogInfo("PUT /api/v1/permissions/:id route registered", logutil.Route("PUT", "/api/v1/permissions/:id"))
-
-	protected.Delete("/permissions/:id", permissionHandler.DeletePermission)
-	logger.LogInfo("DELETE /api/v1/permissions/:id route registered", logutil.Route("DELETE", "/api/v1/permissions/:id"))
+	adminRoutes.Delete("/permissions/:id", permissionHandler.DeletePermission)
+	logger.LogInfo("DELETE /api/v1/permissions/:id route registered (admin)", logutil.Route("DELETE", "/api/v1/permissions/:id"))
 
 	// QR Code routes
 	protected.Get("/qr-codes", qrHandler.ListAllQRCodesHandler)

@@ -10,11 +10,14 @@ import (
 )
 
 type Claims struct {
-	UserID uuid.UUID `json:"user_id"`
+	UserID   uuid.UUID `json:"user_id"`
+	RoleID   uuid.UUID `json:"role_id,omitempty"`
+	RoleName string    `json:"role_name,omitempty"`
+	IsStaff  bool      `json:"is_staff"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID uuid.UUID) (string, error) {
+func GenerateToken(userID uuid.UUID, roleID uuid.UUID, roleName string, isStaff bool) (string, error) {
 	// Get secret key from environment variable
 	secretKey := os.Getenv("JWT_SECRET_KEY")
 	if secretKey == "" {
@@ -23,7 +26,10 @@ func GenerateToken(userID uuid.UUID) (string, error) {
 
 	// Create claims with user ID and standard claims
 	claims := &Claims{
-		UserID: userID,
+		UserID:   userID,
+		RoleID:   roleID,
+		RoleName: roleName,
+		IsStaff:  isStaff,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // Token expires in 24 hours
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

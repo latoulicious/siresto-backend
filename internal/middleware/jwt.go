@@ -32,8 +32,11 @@ func Protected() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(utils.Error("Invalid or expired token", fiber.StatusUnauthorized))
 		}
 
-		// Store user ID in context for later use
+		// Store user ID and role information in context for later use
 		c.Locals("userID", claims.UserID)
+		c.Locals("roleID", claims.RoleID)
+		c.Locals("roleName", claims.RoleName)
+		c.Locals("isStaff", claims.IsStaff)
 
 		return c.Next()
 	}
@@ -43,4 +46,22 @@ func Protected() fiber.Handler {
 func GetUserID(c *fiber.Ctx) (uuid.UUID, bool) {
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	return userID, ok
+}
+
+// GetRoleID retrieves the authenticated user's role ID from the context
+func GetRoleID(c *fiber.Ctx) (uuid.UUID, bool) {
+	roleID, ok := c.Locals("roleID").(uuid.UUID)
+	return roleID, ok
+}
+
+// GetRoleName retrieves the authenticated user's role name from the context
+func GetRoleName(c *fiber.Ctx) (string, bool) {
+	roleName, ok := c.Locals("roleName").(string)
+	return roleName, ok
+}
+
+// IsStaff checks if the authenticated user is staff
+func IsStaff(c *fiber.Ctx) bool {
+	isStaff, ok := c.Locals("isStaff").(bool)
+	return ok && isStaff
 }
