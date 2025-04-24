@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -150,32 +151,51 @@ func (s *UserService) DeleteUser(id uuid.UUID) error {
 
 // LoginUser authenticates a user and returns user info with token
 func (s *UserService) LoginUser(req *dto.LoginRequest) (*dto.UserLoginResponse, error) {
+	log.Printf("Service: Looking up user with email: %s", req.Email)
+
 	user, err := s.Repo.FindByEmail(req.Email)
 	if err != nil || user == nil {
+		if err != nil {
+			log.Printf("Service: Database error finding user: %v", err)
+		} else {
+			log.Printf("Service: User not found with email: %s", req.Email)
+		}
 		return nil, ErrInvalidCredentials
 	}
 
+	log.Printf("Service: User found with ID: %s", user.ID)
+
 	// Verify password using bcrypt
-	if !crypto.CheckPassword(req.Password, user.Password) {
+	valid := crypto.CheckPassword(req.Password, user.Password)
+	if !valid {
+		log.Printf("Service: Password verification failed for user ID: %s", user.ID)
 		return nil, ErrInvalidCredentials
 	}
+
+	log.Printf("Service: Password verification successful for user ID: %s", user.ID)
 
 	// Update last login
 	now := time.Now()
 	user.LastLoginAt = &now
 	if err := s.Repo.UpdateLastLogin(user.ID, now); err != nil {
-		// Log the error but continue - non-critical
-		return nil, err
+		log.Printf("Service: Warning - Failed to update last login time: %v", err)
+		// Non-critical error, continue
+	} else {
+		log.Printf("Service: Updated last login time for user ID: %s", user.ID)
 	}
 
 	// Create user response
 	userResponse := mapToUserResponse(user)
 
 	// Generate JWT token
+	log.Printf("Service: Generating JWT token for user ID: %s", user.ID)
 	token, err := jwt.GenerateToken(user.ID)
 	if err != nil {
+		log.Printf("Service: Failed to generate JWT token: %v", err)
 		return nil, err
 	}
+
+	log.Printf("Service: JWT token generated successfully for user ID: %s", user.ID)
 
 	loginResponse := &dto.UserLoginResponse{
 		User:  userResponse,
