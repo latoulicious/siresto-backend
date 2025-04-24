@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"encoding/json"
+	"path"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/service"
@@ -140,4 +143,108 @@ func (h *ProductHandler) DeleteProduct(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Product deleted successfully", nil))
+}
+
+// Helper function to upload a product image
+func (h *ProductHandler) UploadProductImage(c *fiber.Ctx) error {
+	// Check if uploader is available
+	if h.Service.Uploader == nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("image uploading not configured", fiber.StatusInternalServerError))
+	}
+
+	fileHeader, err := c.FormFile("image")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("image file required", fiber.StatusBadRequest))
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("failed to open image", fiber.StatusInternalServerError))
+	}
+	defer file.Close()
+
+	// Generate a unique file name, e.g., UUID + extension
+	filename := uuid.New().String() + path.Ext(fileHeader.Filename)
+
+	url, err := h.Service.Uploader.Upload(file, "products/"+filename)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("failed to upload image: "+err.Error(), fiber.StatusInternalServerError))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.Success("upload success", map[string]string{"image_url": url}))
+}
+
+// CreateProductWithImage creates a new product with image upload in a single request
+func (h *ProductHandler) CreateProductWithImage(c *fiber.Ctx) error {
+	// Get the multipart form
+	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid form data", fiber.StatusBadRequest))
+	}
+
+	// Get the product data from form field
+	productData := form.Value["product"]
+	if len(productData) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Product data required", fiber.StatusBadRequest))
+	}
+
+	// Parse the product data JSON
+	var body dto.CreateProductRequest
+	if err := json.Unmarshal([]byte(productData[0]), &body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid product data: "+err.Error(), fiber.StatusBadRequest))
+	}
+
+	// Map DTO to domain model
+	product := dto.ToProductDomainFromCreate(&body)
+
+	// Validate the domain model
+	if err := service.ValidateProduct(h.Service.Repo.DB, product); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Validation failed: "+err.Error(), fiber.StatusBadRequest))
+	}
+
+	// Check if there's an image to upload
+	if len(form.File["image"]) > 0 {
+		// Check if uploader is configured - EARLY CHECK to prevent nil pointer
+		if h.Service.Uploader == nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Image uploading not configured properly. R2 configuration is missing.", fiber.StatusInternalServerError))
+		}
+
+		fileHeader := form.File["image"][0]
+		file, err := fileHeader.Open()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to open image", fiber.StatusInternalServerError))
+		}
+		defer file.Close()
+
+		// Generate a unique filename
+		filename := uuid.New().String() + path.Ext(fileHeader.Filename)
+
+		// Extra check for nil uploader right before using it
+		if h.Service.Uploader == nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Image uploading service is not available", fiber.StatusInternalServerError))
+		}
+
+		// Upload the image
+		imageURL, err := h.Service.Uploader.Upload(file, "products/"+filename)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to upload image: "+err.Error(), fiber.StatusInternalServerError))
+		}
+
+		// Set the image URL on the product
+		product.ImageURL = imageURL
+	}
+
+	// Create the product with variations
+	createdProduct, variations, err := h.Service.CreateProductWithVariations(product, body.Variations)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to create product: "+err.Error(), fiber.StatusInternalServerError))
+	}
+
+	// Map the domain model back to a DTO for the response
+	response := dto.ToProductResponse(createdProduct)
+	// Include variations in the response
+	response.Variations = dto.ToVariationResponses(variations)
+
+	// Return the successful response
+	return c.Status(fiber.StatusCreated).JSON(utils.Success("Product created successfully", response))
 }

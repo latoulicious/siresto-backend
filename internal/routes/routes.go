@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/latoulicious/siresto-backend/internal/config"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/handler"
 	"github.com/latoulicious/siresto-backend/internal/repository"
@@ -32,9 +33,31 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	categoryService := &service.CategoryService{Repo: categoryRepo}
 	categoryHandler := &handler.CategoryHandler{Service: categoryService}
 
+	// Initialize R2 Uploader
+	var r2Uploader *utils.R2Uploader
+	r2Uploader, err := config.NewR2UploaderFromEnv()
+	if err != nil {
+		logger.LogError("Failed to initialize R2 uploader", logutil.MainCall("init", "r2uploader", map[string]interface{}{
+			"error": err.Error(),
+		}))
+		logger.LogInfo("Products can be created but image upload functionality will be disabled",
+			logutil.MainCall("init", "r2uploader", map[string]interface{}{
+				"suggestion": "Check your R2 configuration in .env file",
+			}))
+		// r2Uploader will remain nil, which is fine
+	} else {
+		logger.LogInfo("R2 uploader initialized successfully",
+			logutil.MainCall("init", "r2uploader", map[string]interface{}{
+				"status": "ready",
+			}))
+	}
+
 	// Product domain
 	productRepo := &repository.ProductRepository{DB: db}
-	productService := &service.ProductService{Repo: productRepo}
+	productService := &service.ProductService{
+		Repo:     productRepo,
+		Uploader: r2Uploader,
+	}
 	productHandler := &handler.ProductHandler{Service: productService}
 
 	// Variation domain
@@ -238,11 +261,19 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Post("/products", productHandler.CreateProduct)
 	logger.LogInfo("POST /api/v1/products route registered", logutil.Route("POST", "/api/v1/products"))
 
+	// Combined product + image upload endpoint
+	v1.Post("/products/with-image", productHandler.CreateProductWithImage)
+	logger.LogInfo("POST /api/v1/products/with-image route registered", logutil.Route("POST", "/api/v1/products/with-image"))
+
 	v1.Put("/products/:id", productHandler.UpdateProduct)
 	logger.LogInfo("PUT /api/v1/products/:id route registered", logutil.Route("PUT", "/api/v1/products/:id"))
 
 	v1.Delete("/products/:id", productHandler.DeleteProduct)
 	logger.LogInfo("DELETE /api/v1/products/:id route registered", logutil.Route("DELETE", "/api/v1/products/:id"))
+
+	// Product image upload route
+	v1.Post("/products/upload-image", productHandler.UploadProductImage)
+	logger.LogInfo("POST /api/v1/products/upload-image route registered", logutil.Route("POST", "/api/v1/products/upload-image"))
 
 	// Variation Routes (Not tied to a specific product)
 	v1.Get("/variations", variationHandler.ListAllVariations)

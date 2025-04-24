@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,7 +18,14 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Printf("Warning: Error loading .env file: %v\n", err)
+		fmt.Println("Continuing with existing environment variables")
+	} else {
+		fmt.Println("Successfully loaded .env file")
+	}
 
 	// Connect to DB
 	db, err := config.NewGormDB()

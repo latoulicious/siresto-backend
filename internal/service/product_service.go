@@ -7,12 +7,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/repository"
+	"github.com/latoulicious/siresto-backend/internal/utils"
 	"github.com/latoulicious/siresto-backend/pkg/dto"
 	"gorm.io/gorm"
 )
 
 type ProductService struct {
-	Repo *repository.ProductRepository
+	Repo     *repository.ProductRepository
+	Uploader utils.Uploader
 }
 
 // ListAllProducts retrieves all products from the repository

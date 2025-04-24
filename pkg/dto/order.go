@@ -37,4 +37,5 @@ type OrderItemDTO struct {
 	UnitPrice   float64 `json:"unitPrice"`
 	TotalPrice  float64 `json:"totalPrice"`
 	Note        string  `json:"note,omitempty"`
+	ImageURL    string  `json:"imageUrl,omitempty"`
 }

@@ -370,6 +370,12 @@ func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
 			productID = detail.ProductID.String()
 		}
 
+		// Get image URL from the product
+		imageURL := ""
+		if detail.Product != nil {
+			imageURL = detail.Product.ImageURL
+		}
+
 		items = append(items, OrderItemDTO{
 			ID:          detail.ID.String(),
 			ProductID:   productID,
@@ -379,6 +385,7 @@ func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
 			UnitPrice:   unitPrice,
 			TotalPrice:  totalPrice,
 			Note:        detail.Note,
+			ImageURL:    imageURL,
 		})
 	}
 
