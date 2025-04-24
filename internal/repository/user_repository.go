@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,32 +64,15 @@ func (r *UserRepository) DeleteUser(id uuid.UUID) error {
 
 // LoginUser checks if the user exists and returns the user if found
 func (r *UserRepository) FindByEmail(email string) (*domain.User, error) {
-	log.Printf("Repository: Searching for user with email: %s", email)
-
 	var user domain.User
-	result := r.DB.Preload("Role").Where("email = ?", email).First(&user)
-
-	if result.Error != nil {
-		log.Printf("Repository: Error finding user by email: %v", result.Error)
-		return nil, result.Error
+	if err := r.DB.Preload("Role").Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
 	}
-
-	log.Printf("Repository: User found by email with ID: %s, role ID: %v", user.ID, user.RoleID)
 	return &user, nil
 }
 
 func (r *UserRepository) UpdateLastLogin(userID uuid.UUID, time time.Time) error {
-	log.Printf("Repository: Updating last login time for user ID: %s", userID)
-
-	result := r.DB.Model(&domain.User{}).
+	return r.DB.Model(&domain.User{}).
 		Where("id = ?", userID).
-		Update("last_login_at", time)
-
-	if result.Error != nil {
-		log.Printf("Repository: Error updating last login: %v", result.Error)
-		return result.Error
-	}
-
-	log.Printf("Repository: Last login updated successfully for user ID: %s", userID)
-	return nil
+		Update("last_login_at", time).Error
 }

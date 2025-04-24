@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"log"
-	"strings"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -132,41 +129,20 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 
 // LoginUser handles user login
 func (h *UserHandler) LoginUser(c *fiber.Ctx) error {
-	// Log request info
-	log.Printf("Login attempt from IP: %s", c.IP())
-
 	var req dto.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		log.Printf("Login request parsing error: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
-	}
-
-	// Log email for debugging (mask part of it for privacy)
-	if len(req.Email) > 3 {
-		atIndex := strings.Index(req.Email, "@")
-		if atIndex > 0 {
-			maskedEmail := req.Email[:3] + "***" + req.Email[atIndex:]
-			log.Printf("Login attempt for email: %s", maskedEmail)
-		} else {
-			log.Printf("Login attempt with malformed email (no @ symbol)")
-		}
 	}
 
 	if err := h.Validate.Struct(req); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
-		log.Printf("Login validation error: %v", validationErrors)
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(validationErrors.Error(), fiber.StatusBadRequest))
 	}
 
-	// Log that we're calling service layer
-	log.Printf("Attempting login via service for email: %s", req.Email)
-
 	loginResponse, err := h.Service.LoginUser(&req)
 	if err != nil {
-		log.Printf("Login failed: %v", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(utils.Error("Invalid email or password", fiber.StatusUnauthorized))
 	}
 
-	log.Printf("Login successful for user ID: %s", loginResponse.User.ID)
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Login successful", loginResponse))
 }
