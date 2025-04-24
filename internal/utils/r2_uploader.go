@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -47,12 +49,34 @@ func (u *R2Uploader) Upload(file io.Reader, filename string) (string, error) {
 		return "", fmt.Errorf("read file: %w", err)
 	}
 
+	// Detect content type
+	fileBytes := buffer.Bytes()
+	contentType := http.DetectContentType(fileBytes)
+
+	// Use extension as fallback for certain image types
+	ext := filepath.Ext(filename)
+	if contentType == "application/octet-stream" {
+		switch ext {
+		case ".jpg", ".jpeg":
+			contentType = "image/jpeg"
+		case ".png":
+			contentType = "image/png"
+		case ".gif":
+			contentType = "image/gif"
+		case ".webp":
+			contentType = "image/webp"
+		case ".svg":
+			contentType = "image/svg+xml"
+		}
+	}
+
 	uploader := manager.NewUploader(u.Client)
 	_, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(u.BucketName),
-		Key:    aws.String(filename),
-		Body:   bytes.NewReader(buffer.Bytes()),
-		ACL:    "public-read",
+		Bucket:      aws.String(u.BucketName),
+		Key:         aws.String(filename),
+		Body:        bytes.NewReader(fileBytes),
+		ACL:         "public-read",
+		ContentType: aws.String(contentType),
 	})
 	if err != nil {
 		return "", fmt.Errorf("upload to R2: %w", err)
