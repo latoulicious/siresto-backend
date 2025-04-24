@@ -14,9 +14,13 @@ type PermissionService struct {
 	DB   *gorm.DB
 }
 
-// Fix method names to match entity
-func (s *PermissionService) ListAllPermissions() ([]domain.Permission, error) {
-	return s.Repo.ListAllPermissions()
+// ListAllPermissions now supports pagination
+func (s *PermissionService) ListAllPermissions(page int) ([]domain.Permission, int64, error) {
+	const itemsPerPage = 10
+	if page < 1 {
+		page = 1
+	}
+	return s.Repo.ListAllPermissions(page, itemsPerPage)
 }
 
 func (s *PermissionService) GetPermissionByID(id uuid.UUID) (*domain.Permission, error) {

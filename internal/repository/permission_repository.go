@@ -10,15 +10,31 @@ type PermissionRepository struct {
 	DB *gorm.DB
 }
 
-func (r *PermissionRepository) ListAllPermissions() ([]domain.Permission, error) {
+// ListAllPermissions now supports pagination
+func (r *PermissionRepository) ListAllPermissions(page, limit int) ([]domain.Permission, int64, error) {
 	var permissions []domain.Permission
-	err := r.DB.Find(&permissions).Error
-	return permissions, err
+	var totalCount int64
+
+	// Get total count first
+	if err := r.DB.Model(&domain.Permission{}).Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
+	// Get paginated data with roles preloaded
+	err := r.DB.Preload("Roles").
+		Limit(limit).
+		Offset(offset).
+		Find(&permissions).Error
+
+	return permissions, totalCount, err
 }
 
 func (r *PermissionRepository) GetPermissionByID(id uuid.UUID) (*domain.Permission, error) {
 	var permission domain.Permission
-	err := r.DB.First(&permission, "id = ?", id).Error
+	err := r.DB.Preload("Roles").First(&permission, "id = ?", id).Error
 	return &permission, err
 }
 
