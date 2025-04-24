@@ -95,23 +95,6 @@ func (s QRCodeService) BulkCreateQRCodes(
 	return results, nil
 }
 
-// UpdateQRCode updates an existing QR code
-func (s *QRCodeService) UpdateQRCode(id uuid.UUID, tableNumber string, qrType string, menuURL string, expiresAt *time.Time) (*domain.QRCode, error) {
-	qr, err := s.Repo.GetQRCodeByID(id)
-	if err != nil {
-		return nil, err
-	}
-	qr.TableNumber = tableNumber
-	qr.Type = qrType
-	qr.MenuURL = menuURL
-	qr.ExpiresAt = expiresAt
-	err = s.Repo.UpdateQRCode(qr)
-	if err != nil {
-		return nil, err
-	}
-	return qr, nil
-}
-
 // DeleteQRCode deletes a QR code by its ID
 func (s *QRCodeService) DeleteQRCode(id uuid.UUID) error {
 	return s.Repo.DeleteQRCode(id)

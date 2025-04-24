@@ -60,11 +60,6 @@ func (r QRCodeRepository) BulkCreateQRCodes(qrCodes []*domain.QRCode) error {
 	return tx.Commit().Error
 }
 
-// UpdateQRCode updates an existing QR code record
-func (r *QRCodeRepository) UpdateQRCode(qr *domain.QRCode) error {
-	return r.DB.Save(qr).Error
-}
-
 // DeleteQRCode deletes a QR code from the database
 func (r *QRCodeRepository) DeleteQRCode(id uuid.UUID) error {
 	return r.DB.Where("id = ?", id).Delete(&domain.QRCode{}).Error

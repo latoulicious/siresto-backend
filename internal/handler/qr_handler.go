@@ -123,32 +123,6 @@ func (h QRCodeHandler) BulkCreateQRCodeHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(utils.Success("QR codes created successfully", results))
 }
 
-// UpdateQRCodeHandler updates an existing QR code
-func (h *QRCodeHandler) UpdateQRCodeHandler(c *fiber.Ctx) error {
-	id, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid QR code ID", fiber.StatusBadRequest))
-	}
-
-	var request struct {
-		TableNumber string     `json:"table_number"`
-		Type        string     `json:"type"`
-		MenuURL     string     `json:"menu_url"`
-		ExpiresAt   *time.Time `json:"expires_at"`
-	}
-
-	if err := c.BodyParser(&request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request", fiber.StatusBadRequest))
-	}
-
-	qr, err := h.Service.UpdateQRCode(id, request.TableNumber, request.Type, request.MenuURL, request.ExpiresAt)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error(err.Error(), fiber.StatusInternalServerError))
-	}
-
-	return c.Status(fiber.StatusOK).JSON(utils.Success("QR code updated successfully", qr))
-}
-
 // DeleteQRCodeHandler deletes a QR code by its ID
 func (h *QRCodeHandler) DeleteQRCodeHandler(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))

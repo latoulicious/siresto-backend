@@ -229,9 +229,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Post("/qr-codes/bulk", qrHandler.BulkCreateQRCodeHandler)
 	logger.LogInfo("POST /api/v1/qr-codes/bulk route registered", logutil.Route("POST", "/api/v1/qr-codes/bulk"))
 
-	v1.Put("/qr-codes/:id", qrHandler.UpdateQRCodeHandler)
-	logger.LogInfo("PUT /api/v1/qr-codes/:id route registered", logutil.Route("PUT", "/api/v1/qr-codes/:id"))
-
 	v1.Delete("/qr-codes/:id", qrHandler.DeleteQRCodeHandler)
 	logger.LogInfo("DELETE /api/v1/qr-codes/:id route registered", logutil.Route("DELETE", "/api/v1/qr-codes/:id"))
 
@@ -284,7 +281,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("DELETE /api/v1/variations/:id route registered", logutil.Route("DELETE", "/api/v1/variations/:id"))
 
 	// Variation Routes (Tied to a specific product)
-
 	v1.Get("/products/:product_id/variations", variationHandler.GetProductVariations)
 	logger.LogInfo("GET /api/v1/products/:product_id/variations route registered", logutil.Route("GET", "/api/v1/products/:product_id/variations"))
 
