@@ -14,7 +14,7 @@ type UserRepository struct {
 
 func (r *UserRepository) ListAllUsers() ([]domain.User, error) {
 	var users []domain.User
-	err := r.DB.Find(&users).Error
+	err := r.DB.Preload("Role").Find(&users).Error
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func (r *UserRepository) ListAllUsers() ([]domain.User, error) {
 
 func (r *UserRepository) GetUserByID(id uuid.UUID) (*domain.User, error) {
 	var user domain.User
-	err := r.DB.First(&user, "id = ?", id).Error
+	err := r.DB.Preload("Role").First(&user, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
