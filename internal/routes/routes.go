@@ -259,10 +259,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("GET /api/v1/products/:id route registered", logutil.Route("GET", "/api/v1/products/:id"))
 
 	v1.Post("/products", productHandler.CreateProduct)
-	logger.LogInfo("POST /api/v1/products route registered", logutil.Route("POST", "/api/v1/products"))
-
-	// Combined product + image upload endpoint
-	v1.Post("/products/with-image", productHandler.CreateProductWithImage)
 	logger.LogInfo("POST /api/v1/products/with-image route registered", logutil.Route("POST", "/api/v1/products/with-image"))
 
 	v1.Put("/products/:id", productHandler.UpdateProduct)
@@ -270,10 +266,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 
 	v1.Delete("/products/:id", productHandler.DeleteProduct)
 	logger.LogInfo("DELETE /api/v1/products/:id route registered", logutil.Route("DELETE", "/api/v1/products/:id"))
-
-	// Product image upload route
-	v1.Post("/products/upload-image", productHandler.UploadProductImage)
-	logger.LogInfo("POST /api/v1/products/upload-image route registered", logutil.Route("POST", "/api/v1/products/upload-image"))
 
 	// Variation Routes (Not tied to a specific product)
 	v1.Get("/variations", variationHandler.ListAllVariations)
