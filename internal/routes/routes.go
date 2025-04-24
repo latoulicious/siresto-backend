@@ -307,11 +307,14 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Post("/orders", orderHandler.CreateOrder)
 	logger.LogInfo("POST /api/v1/orders route registered", logutil.Route("POST", "/api/v1/orders"))
 
-	// v1.Put("/orders/:id", orderHandler.UpdateOrder)
-	// logger.LogInfo("PUT /api/v1/orders/:id route registered", logutil.Route("PUT", "/api/v1/orders/:id"))
+	v1.Put("/orders/:id", orderHandler.UpdateOrder)
+	logger.LogInfo("PUT /api/v1/orders/:id route registered", logutil.Route("PUT", "/api/v1/orders/:id"))
 
 	v1.Post("/orders/:orderID/complete", orderHandler.MarkOrderAsCompleted)
 	logger.LogInfo("POST /api/v1/orders/:orderID/complete route registered", logutil.Route("POST", "/api/v1/orders/:orderID/complete"))
+
+	v1.Post("/orders/:orderID/cancel", orderHandler.MarkOrderAsCanceled)
+	logger.LogInfo("POST /api/v1/orders/:orderID/cancel route registered", logutil.Route("POST", "/api/v1/orders/:orderID/cancel"))
 
 	// Order Payment
 	v1.Post("/orders/:orderID/payments", paymentHandler.ProcessOrderPayment)

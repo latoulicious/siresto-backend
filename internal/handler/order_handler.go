@@ -2,7 +2,9 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -39,6 +41,13 @@ type PaymentRequest struct {
 	Method         string  `json:"method" validate:"required,oneof=Tunai Qris Debit Kredit"`
 	Amount         float64 `json:"amount" validate:"required,gt=0"`
 	TransactionRef string  `json:"transaction_ref,omitempty"`
+}
+
+type UpdateOrderRequest struct {
+	Order        *OrderRequest        `json:"order,omitempty"`
+	OrderDetails []OrderDetailRequest `json:"order_details,omitempty"`
+	Payments     []PaymentRequest     `json:"payments,omitempty"`
+	DeletedItems []string             `json:"deleted_items,omitempty"` // IDs of order details to delete
 }
 
 type OrderHandler struct {
@@ -100,16 +109,22 @@ func (handler *OrderHandler) CreateOrder(c *fiber.Ctx) error {
 	responseDTO := dto.MapToOrderResponseDTO(createdOrder)
 
 	// Add payment method information to response
-	paymentMethods := make([]map[string]string, 0)
+	paymentMethods := make([]dto.PaymentMethodDTO, 0)
 	if len(request.Payments) > 0 {
 		for _, payment := range request.Payments {
-			paymentMethods = append(paymentMethods, map[string]string{"method": payment.Method})
+			paymentMethods = append(paymentMethods, dto.PaymentMethodDTO{
+				Method:         payment.Method,
+				Amount:         payment.Amount,
+				Status:         "PENDING",
+				TransactionRef: payment.TransactionRef,
+				PaidAt:         time.Now(),
+			})
 		}
 	}
 
-	// Ensure to add paymentMethods to your responseDTO (assuming responseDTO has a field to hold payments)
+	// Ensure to add paymentMethods to your responseDTO
 	if len(paymentMethods) > 0 {
-		responseDTO.Methods = paymentMethods
+		responseDTO.PaymentMethods = paymentMethods
 	}
 
 	// Respond with the DTO instead of raw domain model
@@ -167,6 +182,29 @@ func (h *OrderHandler) MarkOrderAsCompleted(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Order marked as completed", nil))
+}
+
+func (h *OrderHandler) MarkOrderAsCanceled(c *fiber.Ctx) error {
+	// Parse order ID
+	orderID, err := uuid.Parse(c.Params("orderID"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid order ID", fiber.StatusBadRequest))
+	}
+
+	// Call service to cancel the order
+	if err := h.OrderService.CancelOrder(orderID); err != nil {
+		// Handle different error types
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(utils.Error("Order not found", fiber.StatusNotFound))
+		}
+		if strings.Contains(err.Error(), "already completed") || strings.Contains(err.Error(), "already canceled") {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error(err.Error(), fiber.StatusInternalServerError))
+	}
+
+	// Return a simple success message without the full order data
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Order canceled successfully", nil))
 }
 
 // ProcessPayment handles payment for an order and updates its status
@@ -229,4 +267,70 @@ func (h *OrderHandler) ProcessPayment(c *fiber.Ctx) error {
 		"order":   orderDTO,
 		"payment": processedPayment,
 	}))
+}
+
+func (h *OrderHandler) UpdateOrder(c *fiber.Ctx) error {
+	// Parse order ID
+	orderID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid order ID", fiber.StatusBadRequest))
+	}
+
+	// Parse request body
+	var request UpdateOrderRequest
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
+	}
+
+	// Map request to domain models
+	var orderUpdate *domain.Order
+	if request.Order != nil {
+		orderUpdate = mapOrderRequestToDomain(*request.Order)
+		orderUpdate.ID = orderID
+	}
+
+	// Map order details if provided
+	var orderDetails []domain.OrderDetail
+	if len(request.OrderDetails) > 0 {
+		orderDetails = mapOrderDetailsRequestToDomain(request.OrderDetails)
+	}
+
+	// Map payments if provided
+	var payments []domain.Payment
+	if len(request.Payments) > 0 {
+		payments = make([]domain.Payment, len(request.Payments))
+		for i, p := range request.Payments {
+			payments[i] = domain.Payment{
+				Method:         domain.PaymentType(p.Method),
+				Amount:         p.Amount,
+				TransactionRef: p.TransactionRef,
+			}
+		}
+	}
+
+	// Convert deleted item IDs to UUIDs
+	var deletedItemIDs []uuid.UUID
+	if len(request.DeletedItems) > 0 {
+		deletedItemIDs = make([]uuid.UUID, len(request.DeletedItems))
+		for i, id := range request.DeletedItems {
+			uid, err := uuid.Parse(id)
+			if err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(utils.Error(fmt.Sprintf("Invalid deleted item ID: %s", id), fiber.StatusBadRequest))
+			}
+			deletedItemIDs[i] = uid
+		}
+	}
+
+	// Call service to update the order
+	updatedOrder, err := h.OrderService.UpdateOrder(orderID, orderUpdate, orderDetails, payments, deletedItemIDs)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(utils.Error("Order not found", fiber.StatusNotFound))
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error(err.Error(), fiber.StatusInternalServerError))
+	}
+
+	// Map to DTO and return response
+	responseDTO := dto.MapToOrderResponseDTO(updatedOrder)
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Order updated successfully", responseDTO))
 }

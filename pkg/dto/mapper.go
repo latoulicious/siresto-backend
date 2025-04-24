@@ -389,26 +389,34 @@ func MapToOrderResponseDTO(order *domain.Order) OrderResponseDTO {
 		})
 	}
 
-	// Map payment methods - just include methods without other details
-	paymentMethods := make([]map[string]string, 0, len(order.Payments))
+	// Map all payment methods with full details
+	paymentMethods := make([]PaymentMethodDTO, 0)
+
+	// Add all payment methods with complete information
 	for _, payment := range order.Payments {
-		paymentMethods = append(paymentMethods, map[string]string{
-			"method": string(payment.Method),
+		paymentMethods = append(paymentMethods, PaymentMethodDTO{
+			ID:             payment.ID.String(),
+			Method:         string(payment.Method),
+			Amount:         payment.Amount,
+			Status:         string(payment.Status),
+			TransactionRef: payment.TransactionRef,
+			PaidAt:         payment.PaidAt,
 		})
 	}
 
 	return OrderResponseDTO{
-		ID:            order.ID.String(),
-		CustomerName:  order.CustomerName,
-		CustomerPhone: order.CustomerPhone,
-		TableNumber:   order.TableNumber,
-		Status:        string(order.Status),
-		DishStatus:    string(order.DishStatus),
-		TotalAmount:   order.TotalAmount,
-		Notes:         order.Notes,
-		CreatedAt:     order.CreatedAt,
-		PaidAt:        order.PaidAt,
-		Items:         items,
-		Methods:       paymentMethods, // Add the methods to the response
+		ID:             order.ID.String(),
+		CustomerName:   order.CustomerName,
+		CustomerPhone:  order.CustomerPhone,
+		TableNumber:    order.TableNumber,
+		Status:         string(order.Status),
+		DishStatus:     string(order.DishStatus),
+		TotalAmount:    order.TotalAmount,
+		Notes:          order.Notes,
+		CreatedAt:      order.CreatedAt,
+		PaidAt:         order.PaidAt,
+		CancelledAt:    order.CancelledAt,
+		Items:          items,
+		PaymentMethods: paymentMethods,
 	}
 }

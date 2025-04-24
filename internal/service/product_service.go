@@ -266,10 +266,10 @@ func (s *ProductService) DeleteProduct(id uuid.UUID) error {
 // Helper Function
 
 var (
-	ErrMissingCategoryID = errors.New("CategoryID is required")
-	ErrInvalidBasePrice  = errors.New("BasePrice must be greater than 0")
-	ErrEmptyName         = errors.New("Product name cannot be empty")
-	ErrCategoryNotFound  = errors.New("Category does not exist")
+	ErrMissingCategoryID = errors.New("categoryID is required")
+	ErrInvalidBasePrice  = errors.New("basePrice must be greater than 0")
+	ErrEmptyName         = errors.New("product name cannot be empty")
+	ErrCategoryNotFound  = errors.New("category does not exist")
 )
 
 // ValidateProduct performs all validation on a product for creation or update

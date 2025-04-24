@@ -19,6 +19,7 @@ const (
 	FoodStatusReceived  FoodStatus = "Received"
 	FoodStatusInProcess FoodStatus = "In Process"
 	FoodStatusCompleted FoodStatus = "Completed"
+	FoodStatusCancelled FoodStatus = "Cancelled"
 )
 
 type Order struct {
