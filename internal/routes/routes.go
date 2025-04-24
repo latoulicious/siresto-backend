@@ -8,6 +8,7 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/config"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/handler"
+	"github.com/latoulicious/siresto-backend/internal/middleware"
 	"github.com/latoulicious/siresto-backend/internal/repository"
 	"github.com/latoulicious/siresto-backend/internal/service"
 	"github.com/latoulicious/siresto-backend/internal/utils"
@@ -114,7 +115,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	// API v1
 	v1 := app.Group("/api/v1")
 
-	// General routes
+	// Public routes
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"code":    fiber.StatusOK,
@@ -154,193 +155,196 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	})
 	logger.LogInfo("GET /health route registered", logutil.Route("GET", "/health"))
 
-	// Auth routes
+	// Auth routes (public)
 	v1.Post("/auth/login", userHandler.LoginUser)
 	logger.LogInfo("POST /api/v1/auth/login route registered", logutil.Route("POST", "/api/v1/auth/login"))
 
+	// Protected routes
+	protected := v1.Use(middleware.Protected())
+
 	// User routes
-	v1.Get("/users", userHandler.ListAllUsers)
+	protected.Get("/users", userHandler.ListAllUsers)
 	logger.LogInfo("GET /api/v1/users route registered", logutil.Route("GET", "/api/v1/users"))
 
-	v1.Get("/users/:id", userHandler.GetUserByID)
+	protected.Get("/users/:id", userHandler.GetUserByID)
 	logger.LogInfo("GET /api/v1/users/:id route registered", logutil.Route("GET", "/api/v1/users/:id"))
 
-	v1.Post("/users", userHandler.CreateUser)
+	protected.Post("/users", userHandler.CreateUser)
 	logger.LogInfo("POST /api/v1/users route registered", logutil.Route("POST", "/api/v1/users"))
 
-	v1.Put("/users/:id", userHandler.UpdateUser)
+	protected.Put("/users/:id", userHandler.UpdateUser)
 	logger.LogInfo("PUT /api/v1/users/:id route registered", logutil.Route("PUT", "/api/v1/users/:id"))
 
-	v1.Delete("/users/:id", userHandler.DeleteUser)
+	protected.Delete("/users/:id", userHandler.DeleteUser)
 	logger.LogInfo("DELETE /api/v1/users/:id route registered", logutil.Route("DELETE", "/api/v1/users/:id"))
 
 	// Role routes
-	v1.Get("/roles", roleHandler.ListAllRoles)
+	protected.Get("/roles", roleHandler.ListAllRoles)
 	logger.LogInfo("GET /api/v1/roles route registered", logutil.Route("GET", "/api/v1/roles"))
 
-	v1.Get("/roles/:id", roleHandler.GetRoleByID)
+	protected.Get("/roles/:id", roleHandler.GetRoleByID)
 	logger.LogInfo("GET /api/v1/roles/:id route registered", logutil.Route("GET", "/api/v1/roles/:id"))
 
-	v1.Post("/roles", roleHandler.CreateRole)
+	protected.Post("/roles", roleHandler.CreateRole)
 	logger.LogInfo("POST /api/v1/roles route registered", logutil.Route("POST", "/api/v1/roles"))
 
-	v1.Put("/roles/:id", roleHandler.UpdateRole)
+	protected.Put("/roles/:id", roleHandler.UpdateRole)
 	logger.LogInfo("PUT /api/v1/roles/:id route registered", logutil.Route("PUT", "/api/v1/roles/:id"))
 
-	v1.Delete("/roles/:id", roleHandler.DeleteRole)
+	protected.Delete("/roles/:id", roleHandler.DeleteRole)
 	logger.LogInfo("DELETE /api/v1/roles/:id route registered", logutil.Route("DELETE", "/api/v1/roles/:id"))
 
 	// Roles Permission routes
-	v1.Post("/roles/:id/permissions", roleHandler.AddPermissionsToRole)
+	protected.Post("/roles/:id/permissions", roleHandler.AddPermissionsToRole)
 	logger.LogInfo("POST /api/v1/roles/:id/permission route registered", logutil.Route("POST", "/api/v1/roles/:id/permission"))
 
-	v1.Delete("/roles/:id/permissions", roleHandler.RemovePermissionsFromRole)
+	protected.Delete("/roles/:id/permissions", roleHandler.RemovePermissionsFromRole)
 	logger.LogInfo("DELETE /api/v1/roles/:id/permission route registered", logutil.Route("DELETE", "/api/v1/roles/:id/permission"))
 
 	// Permission routes
-	v1.Get("/permissions", permissionHandler.ListAllPermissions)
+	protected.Get("/permissions", permissionHandler.ListAllPermissions)
 	logger.LogInfo("GET /api/v1/permissions route registered", logutil.Route("GET", "/api/v1/permissions"))
 
-	v1.Get("/permissions/:id", permissionHandler.GetPermissionByID)
+	protected.Get("/permissions/:id", permissionHandler.GetPermissionByID)
 	logger.LogInfo("GET /api/v1/permissions/:id route registered", logutil.Route("GET", "/api/v1/permissions/:id"))
 
-	v1.Post("/permissions", permissionHandler.CreatePermission)
+	protected.Post("/permissions", permissionHandler.CreatePermission)
 	logger.LogInfo("POST /api/v1/permissions route registered", logutil.Route("POST", "/api/v1/permissions"))
 
-	v1.Put("/permissions/:id", permissionHandler.UpdatePermission)
+	protected.Put("/permissions/:id", permissionHandler.UpdatePermission)
 	logger.LogInfo("PUT /api/v1/permissions/:id route registered", logutil.Route("PUT", "/api/v1/permissions/:id"))
 
-	v1.Delete("/permissions/:id", permissionHandler.DeletePermission)
+	protected.Delete("/permissions/:id", permissionHandler.DeletePermission)
 	logger.LogInfo("DELETE /api/v1/permissions/:id route registered", logutil.Route("DELETE", "/api/v1/permissions/:id"))
 
 	// QR Code routes
-	v1.Get("/qr-codes", qrHandler.ListAllQRCodesHandler)
+	protected.Get("/qr-codes", qrHandler.ListAllQRCodesHandler)
 	logger.LogInfo("GET /api/v1/qr-codes route registered", logutil.Route("GET", "/api/v1/qr-codes"))
 
-	v1.Get("/qr-codes/:id", qrHandler.GetQRCodeByIDHandler)
+	protected.Get("/qr-codes/:id", qrHandler.GetQRCodeByIDHandler)
 	logger.LogInfo("GET /api/v1/qr-codes/:id route registered", logutil.Route("GET", "/api/v1/qr-codes/:id"))
 
-	v1.Get("/qr-codes/store/:store_id", qrHandler.ListQRCodesHandler)
+	protected.Get("/qr-codes/store/:store_id", qrHandler.ListQRCodesHandler)
 	logger.LogInfo("GET /api/v1/qr-codes/store/:store_id route registered", logutil.Route("GET", "/api/v1/qr-codes/store/:store_id"))
 
-	v1.Post("/qr-codes", qrHandler.CreateQRCodeHandler)
+	protected.Post("/qr-codes", qrHandler.CreateQRCodeHandler)
 	logger.LogInfo("POST /api/v1/qr-codes route registered", logutil.Route("POST", "/api/v1/qr-codes"))
 
-	v1.Post("/qr-codes/bulk", qrHandler.BulkCreateQRCodeHandler)
+	protected.Post("/qr-codes/bulk", qrHandler.BulkCreateQRCodeHandler)
 	logger.LogInfo("POST /api/v1/qr-codes/bulk route registered", logutil.Route("POST", "/api/v1/qr-codes/bulk"))
 
-	v1.Delete("/qr-codes/:id", qrHandler.DeleteQRCodeHandler)
+	protected.Delete("/qr-codes/:id", qrHandler.DeleteQRCodeHandler)
 	logger.LogInfo("DELETE /api/v1/qr-codes/:id route registered", logutil.Route("DELETE", "/api/v1/qr-codes/:id"))
 
 	// Category routes
-	v1.Get("/categories", categoryHandler.ListAllCategories)
+	protected.Get("/categories", categoryHandler.ListAllCategories)
 	logger.LogInfo("GET /api/v1/categories route registered", logutil.Route("GET", "/api/v1/categories"))
 
-	v1.Get("/categories/:id", categoryHandler.GetCategoryByID)
+	protected.Get("/categories/:id", categoryHandler.GetCategoryByID)
 	logger.LogInfo("GET /api/v1/categories/:id route registered", logutil.Route("GET", "/api/v1/categories/:id"))
 
-	v1.Post("/categories", categoryHandler.CreateCategory)
+	protected.Post("/categories", categoryHandler.CreateCategory)
 	logger.LogInfo("POST /api/v1/categories route registered", logutil.Route("POST", "/api/v1/categories"))
 
-	v1.Put("/categories/:id", categoryHandler.UpdateCategory)
+	protected.Put("/categories/:id", categoryHandler.UpdateCategory)
 	logger.LogInfo("PUT /api/v1/categories/:id route registered", logutil.Route("PUT", "/api/v1/categories/:id"))
 
-	v1.Delete("/categories/:id", categoryHandler.DeleteCategory)
+	protected.Delete("/categories/:id", categoryHandler.DeleteCategory)
 	logger.LogInfo("DELETE /api/v1/categories/:id route registered", logutil.Route("DELETE", "/api/v1/categories/:id"))
 
 	// Product routes
-	v1.Get("/products", productHandler.ListAllProducts)
+	protected.Get("/products", productHandler.ListAllProducts)
 	logger.LogInfo("GET /api/v1/products route registered", logutil.Route("GET", "/api/v1/products"))
 
-	v1.Get("/products/:id", productHandler.GetProductByID)
+	protected.Get("/products/:id", productHandler.GetProductByID)
 	logger.LogInfo("GET /api/v1/products/:id route registered", logutil.Route("GET", "/api/v1/products/:id"))
 
-	v1.Post("/products", productHandler.CreateProduct)
+	protected.Post("/products", productHandler.CreateProduct)
 	logger.LogInfo("POST /api/v1/products/with-image route registered", logutil.Route("POST", "/api/v1/products/with-image"))
 
-	v1.Put("/products/:id", productHandler.UpdateProduct)
+	protected.Put("/products/:id", productHandler.UpdateProduct)
 	logger.LogInfo("PUT /api/v1/products/:id route registered", logutil.Route("PUT", "/api/v1/products/:id"))
 
-	v1.Delete("/products/:id", productHandler.DeleteProduct)
+	protected.Delete("/products/:id", productHandler.DeleteProduct)
 	logger.LogInfo("DELETE /api/v1/products/:id route registered", logutil.Route("DELETE", "/api/v1/products/:id"))
 
 	// Variation Routes (Not tied to a specific product)
-	v1.Get("/variations", variationHandler.ListAllVariations)
+	protected.Get("/variations", variationHandler.ListAllVariations)
 	logger.LogInfo("GET /api/v1/variations route registered", logutil.Route("GET", "/api/v1/variations"))
 
-	v1.Get("/variations/:id", variationHandler.GetVariationByID)
+	protected.Get("/variations/:id", variationHandler.GetVariationByID)
 	logger.LogInfo("GET /api/v1/variations/:id route registered", logutil.Route("GET", "/api/v1/variations/:id"))
 
-	v1.Post("/variations", variationHandler.CreateVariation)
+	protected.Post("/variations", variationHandler.CreateVariation)
 	logger.LogInfo("POST /api/v1/variations route registered", logutil.Route("POST", "/api/v1/variations"))
 
-	v1.Put("/variations/:id", variationHandler.UpdateVariation)
+	protected.Put("/variations/:id", variationHandler.UpdateVariation)
 	logger.LogInfo("PUT /api/v1/variations/:id route registered", logutil.Route("PUT", "/api/v1/variations/:id"))
 
-	v1.Delete("/variations/:id", variationHandler.DeleteVariation)
+	protected.Delete("/variations/:id", variationHandler.DeleteVariation)
 	logger.LogInfo("DELETE /api/v1/variations/:id route registered", logutil.Route("DELETE", "/api/v1/variations/:id"))
 
 	// Variation Routes (Tied to a specific product)
-	v1.Get("/products/:product_id/variations", variationHandler.GetProductVariations)
+	protected.Get("/products/:product_id/variations", variationHandler.GetProductVariations)
 	logger.LogInfo("GET /api/v1/products/:product_id/variations route registered", logutil.Route("GET", "/api/v1/products/:product_id/variations"))
 
-	v1.Post("/products/:product_id/variations", variationHandler.CreateProductVariation)
+	protected.Post("/products/:product_id/variations", variationHandler.CreateProductVariation)
 	logger.LogInfo("POST /api/v1/products/:product_id/variations route registered", logutil.Route("POST", "/api/v1/products/:product_id/variations"))
 
-	v1.Put("/products/:product_id/variations/:id", variationHandler.UpdateProductVariation)
+	protected.Put("/products/:product_id/variations/:id", variationHandler.UpdateProductVariation)
 	logger.LogInfo("PUT /api/v1/products/:product_id/variations/:id route registered", logutil.Route("PUT", "/api/v1/products/:product_id/variations/:id"))
 
-	v1.Delete("/products/:product_id/variations/:id", variationHandler.DeleteProductVariation)
+	protected.Delete("/products/:product_id/variations/:id", variationHandler.DeleteProductVariation)
 	logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
 
 	// Order routes
-	v1.Get("/orders", orderHandler.ListAllOrders)
+	protected.Get("/orders", orderHandler.ListAllOrders)
 	logger.LogInfo("GET /api/v1/orders route registered", logutil.Route("GET", "/api/v1/orders"))
 
-	v1.Get("/orders/:id", orderHandler.GetOrderByID)
+	protected.Get("/orders/:id", orderHandler.GetOrderByID)
 	logger.LogInfo("GET /api/v1/orders/:id route registered", logutil.Route("GET", "/api/v1/orders/:id"))
 
-	v1.Post("/orders", orderHandler.CreateOrder)
+	protected.Post("/orders", orderHandler.CreateOrder)
 	logger.LogInfo("POST /api/v1/orders route registered", logutil.Route("POST", "/api/v1/orders"))
 
-	v1.Put("/orders/:id", orderHandler.UpdateOrder)
+	protected.Put("/orders/:id", orderHandler.UpdateOrder)
 	logger.LogInfo("PUT /api/v1/orders/:id route registered", logutil.Route("PUT", "/api/v1/orders/:id"))
 
 	// Order Status
-	v1.Post("/orders/:orderID/complete", orderHandler.MarkOrderAsCompleted)
+	protected.Post("/orders/:orderID/complete", orderHandler.MarkOrderAsCompleted)
 	logger.LogInfo("POST /api/v1/orders/:orderID/complete route registered", logutil.Route("POST", "/api/v1/orders/:orderID/complete"))
 
-	v1.Post("/orders/:orderID/cancel", orderHandler.MarkOrderAsCanceled)
+	protected.Post("/orders/:orderID/cancel", orderHandler.MarkOrderAsCanceled)
 	logger.LogInfo("POST /api/v1/orders/:orderID/cancel route registered", logutil.Route("POST", "/api/v1/orders/:orderID/cancel"))
 
 	// Order Payment
-	v1.Get("/payments", paymentHandler.ListAllOrderPayments)
+	protected.Get("/payments", paymentHandler.ListAllOrderPayments)
 	logger.LogInfo("GET /api/v1/payments route registered", logutil.Route("GET", "/api/v1/payments"))
 
-	v1.Get("/orders/:orderID/payments", paymentHandler.GetOrderPayments)
+	protected.Get("/orders/:orderID/payments", paymentHandler.GetOrderPayments)
 	logger.LogInfo("GET /api/v1/orders/:orderID/payments route registered", logutil.Route("GET", "/api/v1/orders/:orderID/payments"))
 
-	v1.Post("/orders/:orderID/payments", paymentHandler.ProcessOrderPayment)
+	protected.Post("/orders/:orderID/payments", paymentHandler.ProcessOrderPayment)
 	logger.LogInfo("POST /api/v1/orders/:orderID/payments route registered", logutil.Route("POST", "/api/v1/orders/:orderID/payments"))
 
 	// Utility routes
-	v1.Get("/themes", themeHandler.ListAllThemes)
+	protected.Get("/themes", themeHandler.ListAllThemes)
 	logger.LogInfo("GET /api/v1/themes route registered", logutil.Route("GET", "/api/v1/themes"))
 
-	v1.Get("/themes/:id", themeHandler.GetThemeByID)
+	protected.Get("/themes/:id", themeHandler.GetThemeByID)
 	logger.LogInfo("GET /api/v1/themes/:id route registered", logutil.Route("GET", "/api/v1/themes/:id"))
 
-	v1.Post("/themes", themeHandler.CreateTheme)
+	protected.Post("/themes", themeHandler.CreateTheme)
 	logger.LogInfo("POST /api/v1/themes route registered", logutil.Route("POST", "/api/v1/themes"))
 
-	v1.Put("/themes/:id", themeHandler.UpdateTheme)
+	protected.Put("/themes/:id", themeHandler.UpdateTheme)
 	logger.LogInfo("PUT /api/v1/themes/:id route registered", logutil.Route("PUT", "/api/v1/themes/:id"))
 
-	v1.Delete("/themes/:id", themeHandler.DeleteTheme)
+	protected.Delete("/themes/:id", themeHandler.DeleteTheme)
 	logger.LogInfo("DELETE /api/v1/themes/:id route registered", logutil.Route("DELETE", "/api/v1/themes/:id"))
 
 	// Log routes
-	v1.Get("/logs", func(c *fiber.Ctx) error {
+	protected.Get("/logs", func(c *fiber.Ctx) error {
 		var logs []domain.Log
 		if err := db.Find(&logs).Error; err != nil {
 			logger.LogError("Failed to fetch logs", logutil.Route("GET", "/api/v1/logs"))

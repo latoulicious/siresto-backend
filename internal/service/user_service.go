@@ -7,8 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/repository"
-	"github.com/latoulicious/siresto-backend/internal/utils"
+	"github.com/latoulicious/siresto-backend/pkg/crypto"
 	"github.com/latoulicious/siresto-backend/pkg/dto"
+	"github.com/latoulicious/siresto-backend/pkg/jwt"
 )
 
 // Common errors
@@ -57,7 +58,11 @@ func (s *UserService) CreateUser(req *dto.CreateUserRequest) (*dto.UserResponse,
 		return nil, ErrEmailAlreadyExists
 	}
 
-	hashedPassword := utils.HashSHA256(req.Password)
+	// Hash password using bcrypt
+	hashedPassword, err := crypto.HashPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
 
 	// Map DTO to domain
 	user := &domain.User{
@@ -106,7 +111,11 @@ func (s *UserService) UpdateUser(id uuid.UUID, req *dto.UpdateUserRequest) (*dto
 	}
 
 	if req.Password != nil {
-		existingUser.Password = utils.HashSHA256(*req.Password)
+		hashedPassword, err := crypto.HashPassword(*req.Password)
+		if err != nil {
+			return nil, err
+		}
+		existingUser.Password = hashedPassword
 	}
 
 	if req.IsStaff != nil {
@@ -146,8 +155,8 @@ func (s *UserService) LoginUser(req *dto.LoginRequest) (*dto.UserLoginResponse, 
 		return nil, ErrInvalidCredentials
 	}
 
-	hashedInput := utils.HashSHA256(req.Password)
-	if user.Password != hashedInput {
+	// Verify password using bcrypt
+	if !crypto.CheckPassword(req.Password, user.Password) {
 		return nil, ErrInvalidCredentials
 	}
 
@@ -159,22 +168,14 @@ func (s *UserService) LoginUser(req *dto.LoginRequest) (*dto.UserLoginResponse, 
 		return nil, err
 	}
 
-	// Get user role if available
-	// var roleInfo dto.RoleInfo
-	// if user.RoleID != uuid.Nil {
-	// 	// Here you would fetch role info from repository
-	// 	// For now, assuming a dummy implementation
-	// 	roleInfo = dto.RoleInfo{
-	// 		ID:   user.RoleID,
-	// 		Name: "Dummy Role", // In a real scenario, fetch this from the database
-	// 	}
-	// }
-
 	// Create user response
 	userResponse := mapToUserResponse(user)
 
-	// Generate JWT token (implementation depends on your auth strategy)
-	token := generateToken(user.ID)
+	// Generate JWT token
+	token, err := jwt.GenerateToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	loginResponse := &dto.UserLoginResponse{
 		User:  userResponse,
@@ -203,11 +204,4 @@ func mapToUserResponse(user *domain.User) dto.UserResponse {
 		LastLoginAt: user.LastLoginAt,
 		Role:        role,
 	}
-}
-
-// generateToken generates a JWT token for the user
-func generateToken(userID uuid.UUID) string {
-	// Implement your JWT token generation here
-	// This is a placeholder implementation
-	return "jwt-token-placeholder-" + userID.String()
 }
