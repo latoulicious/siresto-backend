@@ -291,11 +291,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Post("/products/:product_id/variations", variationHandler.CreateProductVariation)
 	logger.LogInfo("POST /api/v1/products/:product_id/variations route registered", logutil.Route("POST", "/api/v1/products/:product_id/variations"))
 
-	// v1.Put("/products/:product_id/variations/:id", variationHandler.UpdateVariation)
-	// logger.LogInfo("PUT /api/v1/products/:product_id/variations/:id route registered", logutil.Route("PUT", "/api/v1/products/:product_id/variations/:id"))
+	v1.Put("/products/:product_id/variations/:id", variationHandler.UpdateProductVariation)
+	logger.LogInfo("PUT /api/v1/products/:product_id/variations/:id route registered", logutil.Route("PUT", "/api/v1/products/:product_id/variations/:id"))
 
-	// v1.Delete("/products/:product_id/variations/:id", variationHandler.DeleteVariation)
-	// logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
+	v1.Delete("/products/:product_id/variations/:id", variationHandler.DeleteProductVariation)
+	logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
 
 	// Order routes
 	v1.Get("/orders", orderHandler.ListAllOrders)
@@ -310,6 +310,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	v1.Put("/orders/:id", orderHandler.UpdateOrder)
 	logger.LogInfo("PUT /api/v1/orders/:id route registered", logutil.Route("PUT", "/api/v1/orders/:id"))
 
+	// Order Status
 	v1.Post("/orders/:orderID/complete", orderHandler.MarkOrderAsCompleted)
 	logger.LogInfo("POST /api/v1/orders/:orderID/complete route registered", logutil.Route("POST", "/api/v1/orders/:orderID/complete"))
 
@@ -317,11 +318,14 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("POST /api/v1/orders/:orderID/cancel route registered", logutil.Route("POST", "/api/v1/orders/:orderID/cancel"))
 
 	// Order Payment
+	v1.Get("/payments", paymentHandler.ListAllOrderPayments)
+	logger.LogInfo("GET /api/v1/payments route registered", logutil.Route("GET", "/api/v1/payments"))
+
+	v1.Get("/orders/:orderID/payments", paymentHandler.GetOrderPayments)
+	logger.LogInfo("GET /api/v1/orders/:orderID/payments route registered", logutil.Route("GET", "/api/v1/orders/:orderID/payments"))
+
 	v1.Post("/orders/:orderID/payments", paymentHandler.ProcessOrderPayment)
 	logger.LogInfo("POST /api/v1/orders/:orderID/payments route registered", logutil.Route("POST", "/api/v1/orders/:orderID/payments"))
-
-	// app.Get("/api/orders/:orderID/payments", paymentHandler.GetOrderPayments)
-	// logger.LogInfo("GET /api/v1/orders/:orderID/payments route registered", logutil.Route("GET", "/api/v1/orders/:orderID/payments"))
 
 	// Utility routes
 	v1.Get("/themes", themeHandler.ListAllThemes)

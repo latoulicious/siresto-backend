@@ -20,8 +20,8 @@ type PaymentService struct {
 	Repo *repository.PaymentRepository
 }
 
-func (s *PaymentService) ListAllPayments() ([]domain.Payment, error) {
-	return s.Repo.ListAllPayments()
+func (s *PaymentService) ListAllOrderPayments() ([]domain.Payment, error) {
+	return s.Repo.ListAllOrderPayments()
 }
 
 func (s *PaymentService) CreatePayment(payment *domain.Payment) error {

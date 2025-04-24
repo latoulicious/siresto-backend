@@ -119,6 +119,63 @@ func (h *VariationHandler) UpdateVariation(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Variation updated successfully", updatedVariation))
 }
 
+// UpdateProductVariation updates a variation for a specific product, ensuring it belongs to that product
+func (h *VariationHandler) UpdateProductVariation(c *fiber.Ctx) error {
+	// Parse product ID from URL parameter
+	productID, err := uuid.Parse(c.Params("product_id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid product ID format", fiber.StatusBadRequest))
+	}
+
+	// Parse variation ID from URL parameter
+	variationID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid variation ID format", fiber.StatusBadRequest))
+	}
+
+	// Get the variation to verify it belongs to this product
+	existingVariation, err := h.Service.GetVariationByID(variationID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Variation not found", fiber.StatusNotFound))
+	}
+
+	// Verify the variation belongs to the specified product
+	if existingVariation.ProductID != productID {
+		return c.Status(fiber.StatusForbidden).JSON(utils.Error("Variation does not belong to the specified product", fiber.StatusForbidden))
+	}
+
+	// Parse request body
+	var request struct {
+		Description   string   `json:"description"`
+		PriceModifier *float64 `json:"price_modifier"`
+		PriceAbsolute *float64 `json:"price_absolute"`
+		IsDefault     bool     `json:"is_default"`
+		IsAvailable   bool     `json:"is_available"`
+		IsRequired    bool     `json:"is_required"`
+	}
+
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request format", fiber.StatusBadRequest))
+	}
+
+	// Prepare variation update
+	variation := &domain.Variation{
+		ID:          variationID,
+		ProductID:   productID, // Ensure product ID is preserved
+		IsDefault:   request.IsDefault,
+		IsAvailable: request.IsAvailable,
+		IsRequired:  request.IsRequired,
+	}
+
+	// Update the variation
+	updatedVariation, err := h.Service.UpdateVariation(variation)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error(err.Error(), fiber.StatusInternalServerError))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Product variation updated successfully", updatedVariation))
+}
+
 // DeleteVariationHandler deletes a variation by its ID
 func (h *VariationHandler) DeleteVariation(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
@@ -132,6 +189,40 @@ func (h *VariationHandler) DeleteVariation(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusNoContent).JSON(utils.Success("Variation deleted successfully", nil))
+}
+
+// DeleteProductVariation deletes a variation for a specific product, ensuring it belongs to that product
+func (h *VariationHandler) DeleteProductVariation(c *fiber.Ctx) error {
+	// Parse product ID from URL parameter
+	productID, err := uuid.Parse(c.Params("product_id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid product ID format", fiber.StatusBadRequest))
+	}
+
+	// Parse variation ID from URL parameter
+	variationID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid variation ID format", fiber.StatusBadRequest))
+	}
+
+	// Get the variation to verify it belongs to this product
+	variation, err := h.Service.GetVariationByID(variationID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Variation not found", fiber.StatusNotFound))
+	}
+
+	// Verify the variation belongs to the specified product
+	if variation.ProductID != productID {
+		return c.Status(fiber.StatusForbidden).JSON(utils.Error("Variation does not belong to the specified product", fiber.StatusForbidden))
+	}
+
+	// Delete the variation
+	err = h.Service.DeleteVariation(variationID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error(err.Error(), fiber.StatusInternalServerError))
+	}
+
+	return c.Status(fiber.StatusNoContent).JSON(utils.Success("Product variation deleted successfully", nil))
 }
 
 // TODO Implement Function for Product Tied Variations
