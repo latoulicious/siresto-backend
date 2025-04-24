@@ -15,9 +15,9 @@ type QRCodeService struct {
 	Repo *repository.QRCodeRepository
 }
 
-// ListAllQRCodes fetches all QR codes across all stores
-func (s *QRCodeService) ListAllQRCodes() ([]domain.QRCode, error) {
-	return s.Repo.ListAllQRCodes()
+// ListAllQRCodes fetches all QR codes across all stores with pagination
+func (s *QRCodeService) ListAllQRCodes(page, perPage int) ([]domain.QRCode, int64, error) {
+	return s.Repo.ListAllQRCodes(page, perPage)
 }
 
 // GetQRCodeByID fetches a QR code by its ID
@@ -25,9 +25,9 @@ func (s *QRCodeService) GetQRCodeByID(id uuid.UUID) (*domain.QRCode, error) {
 	return s.Repo.GetQRCodeByID(id)
 }
 
-// ListQRCodes fetches all QR codes for a store
-func (s *QRCodeService) ListQRCodes(storeID uuid.UUID) ([]domain.QRCode, error) {
-	return s.Repo.ListQRCodes(storeID)
+// ListQRCodes fetches all QR codes for a store with pagination
+func (s *QRCodeService) ListQRCodes(storeID uuid.UUID, page, perPage int) ([]domain.QRCode, int64, error) {
+	return s.Repo.ListQRCodes(storeID, page, perPage)
 }
 
 // CreateQRCode creates a new QR code

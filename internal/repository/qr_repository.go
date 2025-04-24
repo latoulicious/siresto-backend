@@ -10,14 +10,26 @@ type QRCodeRepository struct {
 	DB *gorm.DB
 }
 
-// ListAllQRCodes fetches all QR codes from the database
-func (r *QRCodeRepository) ListAllQRCodes() ([]domain.QRCode, error) {
+// ListAllQRCodes fetches all QR codes from the database with pagination
+func (r *QRCodeRepository) ListAllQRCodes(page, perPage int) ([]domain.QRCode, int64, error) {
 	var qrs []domain.QRCode
-	err := r.DB.Find(&qrs).Error
-	if err != nil {
-		return nil, err
+	var totalCount int64
+
+	// Get total count
+	if err := r.DB.Model(&domain.QRCode{}).Count(&totalCount).Error; err != nil {
+		return nil, 0, err
 	}
-	return qrs, nil
+
+	// Calculate offset
+	offset := (page - 1) * perPage
+
+	// Get paginated data
+	err := r.DB.Offset(offset).Limit(perPage).Find(&qrs).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return qrs, totalCount, nil
 }
 
 // GetQRCodeByID fetches a QR code by its ID
@@ -30,14 +42,26 @@ func (r *QRCodeRepository) GetQRCodeByID(id uuid.UUID) (*domain.QRCode, error) {
 	return &qr, nil
 }
 
-// ListQRCodes fetches all QR codes for a specific store
-func (r *QRCodeRepository) ListQRCodes(storeID uuid.UUID) ([]domain.QRCode, error) {
+// ListQRCodes fetches all QR codes for a specific store with pagination
+func (r *QRCodeRepository) ListQRCodes(storeID uuid.UUID, page, perPage int) ([]domain.QRCode, int64, error) {
 	var qrs []domain.QRCode
-	err := r.DB.Where("store_id = ?", storeID).Find(&qrs).Error
-	if err != nil {
-		return nil, err
+	var totalCount int64
+
+	// Get total count for the store
+	if err := r.DB.Model(&domain.QRCode{}).Where("store_id = ?", storeID).Count(&totalCount).Error; err != nil {
+		return nil, 0, err
 	}
-	return qrs, nil
+
+	// Calculate offset
+	offset := (page - 1) * perPage
+
+	// Get paginated data for the store
+	err := r.DB.Where("store_id = ?", storeID).Offset(offset).Limit(perPage).Find(&qrs).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return qrs, totalCount, nil
 }
 
 // CreateQRCode will create a new QR code record in the database
