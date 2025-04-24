@@ -25,6 +25,31 @@ func (r *ProductRepository) ListAllProducts() ([]domain.Product, error) {
 	return products, nil
 }
 
+// ListProductsPaginated fetches products with pagination
+func (r *ProductRepository) ListProductsPaginated(offset, limit int) ([]domain.Product, int, error) {
+	var products []domain.Product
+	var total int64
+
+	// Get total count
+	if err := r.DB.Model(&domain.Product{}).Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count products: %w", err)
+	}
+
+	// Get paginated data
+	err := r.DB.
+		Preload("Category").
+		Preload("Variations").
+		Offset(offset).
+		Limit(limit).
+		Find(&products).Error
+
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch products: %w", err)
+	}
+
+	return products, int(total), nil
+}
+
 // GetProductByID fetches a product by its ID
 func (r *ProductRepository) GetProductByID(id uuid.UUID) (*domain.Product, error) {
 	var product domain.Product

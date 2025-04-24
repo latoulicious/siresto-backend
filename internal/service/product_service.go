@@ -18,8 +18,9 @@ type ProductService struct {
 }
 
 // ListAllProducts retrieves all products from the repository
-func (s *ProductService) ListAllProducts() ([]domain.Product, error) {
-	return s.Repo.ListAllProducts()
+// If limit > 0, pagination is enabled and offset must be provided
+func (s *ProductService) ListAllProducts(offset, limit int) ([]domain.Product, int, error) {
+	return s.Repo.ListProductsPaginated(offset, limit)
 }
 
 // GetProductByID retrieves a product by its ID from the repository

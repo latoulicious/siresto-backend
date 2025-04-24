@@ -15,30 +15,33 @@ type CategoryHandler struct {
 
 // ListAllCategories retrieves all categories, always including products
 func (h *CategoryHandler) ListAllCategories(c *fiber.Ctx) error {
-	categories, err := h.Service.ListAllCategories(true) // Always include products
+	categories, err := h.Service.ListAllCategories(true)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve categories", fiber.StatusInternalServerError))
+		errInfo := utils.NewErrorInfo("CATEGORY_LIST_ERROR", err.Error(), "", nil)
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to retrieve categories", fiber.StatusInternalServerError, errInfo))
 	}
 
-	// Map the domain categories to DTO response
 	var categoryResponses []dto.CategoryResponse
 	for _, category := range categories {
 		categoryResponses = append(categoryResponses, *dto.ToCategoryResponse(&category))
 	}
 
-	return c.Status(fiber.StatusOK).JSON(utils.Success("Categories retrieved successfully", categoryResponses))
+	metadata := utils.NewPaginationMetadata(1, len(categoryResponses), len(categoryResponses))
+	return c.Status(fiber.StatusOK).JSON(utils.Success("Categories retrieved successfully", categoryResponses, metadata))
 }
 
 // GetCategoryByID retrieves a category by ID
 func (h *CategoryHandler) GetCategoryByID(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest))
+		errInfo := utils.NewErrorInfo("INVALID_ID", "The provided ID is not a valid UUID", "id", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest, errInfo))
 	}
 
-	category, err := h.Service.GetCategoryByID(id, true) // always preload products
+	category, err := h.Service.GetCategoryByID(id, true)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Category not found", fiber.StatusNotFound))
+		errInfo := utils.NewErrorInfo("CATEGORY_NOT_FOUND", err.Error(), "id", nil)
+		return c.Status(fiber.StatusNotFound).JSON(utils.Error("Category not found", fiber.StatusNotFound, errInfo))
 	}
 
 	response := dto.ToCategoryResponse(category)
@@ -49,17 +52,17 @@ func (h *CategoryHandler) GetCategoryByID(c *fiber.Ctx) error {
 func (h *CategoryHandler) CreateCategory(c *fiber.Ctx) error {
 	var body domain.Category
 	if err := c.BodyParser(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
+		errInfo := utils.NewErrorInfo("INVALID_REQUEST", "Failed to parse request body", "", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest, errInfo))
 	}
 
-	// Delegate validation to the service layer
 	createdCategory, err := h.Service.CreateCategory(&body)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
+		errInfo := utils.NewErrorInfo("CATEGORY_CREATE_ERROR", err.Error(), "", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Failed to create category", fiber.StatusBadRequest, errInfo))
 	}
 
 	response := dto.ToCategoryResponse(createdCategory)
-
 	return c.Status(fiber.StatusCreated).JSON(utils.Success("Category created successfully", response))
 }
 
@@ -67,17 +70,20 @@ func (h *CategoryHandler) CreateCategory(c *fiber.Ctx) error {
 func (h *CategoryHandler) UpdateCategory(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest))
+		errInfo := utils.NewErrorInfo("INVALID_ID", "The provided ID is not a valid UUID", "id", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest, errInfo))
 	}
 
 	var body dto.UpdateCategoryRequest
 	if err := c.BodyParser(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest))
+		errInfo := utils.NewErrorInfo("INVALID_REQUEST", "Failed to parse request body", "", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request body", fiber.StatusBadRequest, errInfo))
 	}
 
 	updatedCategory, err := h.Service.UpdateCategory(id, &body)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(err.Error(), fiber.StatusBadRequest))
+		errInfo := utils.NewErrorInfo("CATEGORY_UPDATE_ERROR", err.Error(), "", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Failed to update category", fiber.StatusBadRequest, errInfo))
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.Success("Category updated successfully", updatedCategory))
@@ -87,12 +93,13 @@ func (h *CategoryHandler) UpdateCategory(c *fiber.Ctx) error {
 func (h *CategoryHandler) DeleteCategory(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest))
+		errInfo := utils.NewErrorInfo("INVALID_ID", "The provided ID is not a valid UUID", "id", nil)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid category ID", fiber.StatusBadRequest, errInfo))
 	}
 
-	// Delegate validation to the service layer for deletion
 	if err := h.Service.DeleteCategory(id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to delete category", fiber.StatusInternalServerError))
+		errInfo := utils.NewErrorInfo("CATEGORY_DELETE_ERROR", err.Error(), "", nil)
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to delete category", fiber.StatusInternalServerError, errInfo))
 	}
 
 	return c.Status(fiber.StatusNoContent).JSON(utils.Success("Category deleted successfully", nil))
