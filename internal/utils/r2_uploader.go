@@ -7,7 +7,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -44,10 +46,16 @@ func NewR2Uploader(accessKey, secretKey, endpoint, region, bucketName, baseURL s
 		BaseURL:    baseURL,
 	}
 
-	// Configure CORS for the bucket
-	if err := uploader.ConfigureCORS(); err != nil {
-		log.Printf("Warning: Failed to configure CORS for bucket %s: %v", bucketName, err)
-		// Continue anyway - don't fail initialization
+	// Check if CORS configuration is enabled via environment variable
+	// Default is disabled to avoid conflicts with Cloudflare dashboard settings
+	if configureCors := strings.ToLower(os.Getenv("R2_CONFIGURE_CORS")); configureCors == "true" {
+		// Configure CORS for the bucket
+		if err := uploader.ConfigureCORS(); err != nil {
+			log.Printf("Warning: Failed to configure CORS for bucket %s: %v", bucketName, err)
+			// Continue anyway - don't fail initialization
+		}
+	} else {
+		log.Printf("CORS configuration via API is disabled. Using CORS settings from Cloudflare dashboard.")
 	}
 
 	return uploader, nil
