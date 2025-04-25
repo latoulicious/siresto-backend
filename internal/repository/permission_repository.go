@@ -56,3 +56,10 @@ func (r *PermissionRepository) GetPermissionsByIDs(ids []uuid.UUID) ([]domain.Pe
 	err := r.DB.Where("id IN ?", ids).Find(&permissions).Error
 	return permissions, err
 }
+
+// GetPermissionByName retrieves a permission by its name
+func (r *PermissionRepository) GetPermissionByName(name string) (*domain.Permission, error) {
+	var permission domain.Permission
+	err := r.DB.Where("name = ?", name).First(&permission).Error
+	return &permission, err
+}

@@ -37,6 +37,7 @@ func Protected() fiber.Handler {
 		c.Locals("roleID", claims.RoleID)
 		c.Locals("roleName", claims.RoleName)
 		c.Locals("isStaff", claims.IsStaff)
+		c.Locals("permissions", claims.Permissions)
 
 		return c.Next()
 	}

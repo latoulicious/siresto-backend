@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -8,6 +9,7 @@ import (
 	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/service"
 	"github.com/latoulicious/siresto-backend/internal/utils"
+	"github.com/latoulicious/siresto-backend/internal/validator"
 )
 
 type PermissionHandler struct {
@@ -62,6 +64,20 @@ func (h *PermissionHandler) CreatePermission(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request payload", fiber.StatusBadRequest))
 	}
 
+	// Validate permission format
+	if err := validator.ValidatePermission(&permission); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(
+			err.Error(),
+			fiber.StatusBadRequest,
+			utils.NewErrorInfo("VALIDATION_ERROR", "Permission format is invalid", "", nil),
+		))
+	}
+
+	// Auto-generate description if not provided
+	if permission.Description == "" {
+		permission.Description = validator.GetPermissionDescription(permission.Name)
+	}
+
 	if err := h.Service.CreatePermission(&permission); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to create permission", fiber.StatusInternalServerError))
 	}
@@ -78,6 +94,22 @@ func (h *PermissionHandler) UpdatePermission(c *fiber.Ctx) error {
 	var permission domain.Permission
 	if err := c.BodyParser(&permission); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request payload", fiber.StatusBadRequest))
+	}
+
+	// Validate permission format if name is being updated
+	if permission.Name != "" {
+		if err := validator.ValidatePermission(&permission); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.Error(
+				err.Error(),
+				fiber.StatusBadRequest,
+				utils.NewErrorInfo("VALIDATION_ERROR", "Permission format is invalid", "", nil),
+			))
+		}
+	}
+
+	// Auto-generate description if updating name but not description
+	if permission.Name != "" && permission.Description == "" {
+		permission.Description = validator.GetPermissionDescription(permission.Name)
 	}
 
 	permission.ID = roleID
@@ -98,4 +130,51 @@ func (h *PermissionHandler) DeletePermission(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error("Failed to delete permission", fiber.StatusInternalServerError))
 	}
 	return c.Status(fiber.StatusNoContent).JSON(utils.Success("Permission deleted successfully", nil))
+}
+
+// GenerateResourcePermissions handles bulk permission generation for a new resource
+func (h *PermissionHandler) GenerateResourcePermissions(c *fiber.Ctx) error {
+	// Parse request
+	type ResourcePermissionRequest struct {
+		ResourceName  string `json:"resource_name" validate:"required"`
+		IncludeManage bool   `json:"include_manage"`
+	}
+
+	var req ResourcePermissionRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request payload", fiber.StatusBadRequest))
+	}
+
+	// Validate and format the resource name
+	resourceName, err := utils.ValidateAndFormatResource(req.ResourceName)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error(
+			err.Error(),
+			fiber.StatusBadRequest,
+			utils.NewErrorInfo("VALIDATION_ERROR", "Resource name is invalid", "", nil),
+		))
+	}
+
+	// Generate the permissions
+	var permissions []domain.Permission
+	if req.IncludeManage {
+		permissions = utils.GeneratePermissionBundle(resourceName)
+	} else {
+		permissions = utils.GenerateCRUDPermissions(resourceName)
+	}
+
+	// Save all permissions in a transaction
+	createdPermissions := make([]domain.Permission, 0, len(permissions))
+	for _, perm := range permissions {
+		if err := h.Service.CreatePermission(&perm); err != nil {
+			// If permission already exists, continue to the next one
+			continue
+		}
+		createdPermissions = append(createdPermissions, perm)
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(utils.Success(
+		fmt.Sprintf("Created %d permissions for resource '%s'", len(createdPermissions), req.ResourceName),
+		createdPermissions,
+	))
 }

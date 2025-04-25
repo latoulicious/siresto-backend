@@ -53,3 +53,8 @@ func (s *PermissionService) GetPermissionsByIDs(ids []uuid.UUID) ([]domain.Permi
 
 	return permissions, nil
 }
+
+// GetPermissionByName retrieves a permission by its name
+func (s *PermissionService) GetPermissionByName(name string) (*domain.Permission, error) {
+	return s.Repo.GetPermissionByName(name)
+}

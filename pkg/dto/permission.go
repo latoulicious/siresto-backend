@@ -8,12 +8,14 @@ import (
 type CreateRoleRequest struct {
 	Name        string      `json:"name" validate:"required"`
 	Description string      `json:"description"`
+	Position    int         `json:"position"`
 	Permissions []uuid.UUID `json:"permissions"`
 }
 
 type UpdateRoleRequest struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
+	Position    *int        `json:"position,omitempty"`
 	Permissions []uuid.UUID `json:"permissions"`
 }
 
@@ -33,5 +35,7 @@ type RoleResponse struct {
 	ID          uuid.UUID            `json:"id"`
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
+	Position    int                  `json:"position"`
+	IsSystem    bool                 `json:"is_system"`
 	Permissions []PermissionResponse `json:"permissions"`
 }

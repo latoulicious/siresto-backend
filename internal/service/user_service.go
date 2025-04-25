@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/latoulicious/siresto-backend/internal/domain"
+	"github.com/latoulicious/siresto-backend/internal/middleware"
 	"github.com/latoulicious/siresto-backend/internal/repository"
 	"github.com/latoulicious/siresto-backend/pkg/crypto"
 	"github.com/latoulicious/siresto-backend/pkg/dto"
@@ -174,13 +175,25 @@ func (s *UserService) LoginUser(req *dto.LoginRequest) (*dto.UserLoginResponse, 
 	// Extract role information for JWT
 	roleID := uuid.Nil
 	roleName := ""
+	var permissions []string
+
 	if user.Role != nil {
 		roleID = user.Role.ID
 		roleName = user.Role.Name
+
+		// Get default permissions for this role
+		permissions = middleware.GetDefaultPermissionsForRole(roleName)
+
+		// For custom roles, extract permissions from the database
+		if len(permissions) == 0 && user.Role.Permissions != nil {
+			for _, perm := range user.Role.Permissions {
+				permissions = append(permissions, perm.Name)
+			}
+		}
 	}
 
-	// Generate JWT token with role information
-	token, err := jwt.GenerateToken(user.ID, roleID, roleName, user.IsStaff)
+	// Generate JWT token with role information and permissions
+	token, err := jwt.GenerateToken(user.ID, roleID, roleName, user.IsStaff, permissions)
 	if err != nil {
 		return nil, err
 	}

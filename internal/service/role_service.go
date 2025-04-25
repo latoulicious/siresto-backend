@@ -53,6 +53,22 @@ func (s *RoleService) CreateRole(req *dto.CreateRoleRequest) (*dto.RoleResponse,
 		}
 	}
 
+	// Set a default position if not specified (100 is a relatively low privilege level)
+	if req.Position == 0 {
+		req.Position = 100
+	}
+
+	// Check if the position is valid (must be > caller's position)
+	callerPosition, err := s.GetCallerPosition()
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate role position: %w", err)
+	}
+
+	// Cannot create a role with higher or equal privilege than the caller
+	if req.Position <= callerPosition {
+		return nil, fmt.Errorf("cannot create a role with higher privilege than your own role")
+	}
+
 	// Create role with permissions in a transaction
 	var role domain.Role
 	err = s.DB.Transaction(func(tx *gorm.DB) error {
@@ -60,6 +76,8 @@ func (s *RoleService) CreateRole(req *dto.CreateRoleRequest) (*dto.RoleResponse,
 			ID:          uuid.New(),
 			Name:        req.Name,
 			Description: req.Description,
+			Position:    req.Position,
+			IsSystem:    false, // New roles can't be system roles
 			Permissions: make([]*domain.Permission, len(permissions)),
 		}
 
@@ -93,9 +111,34 @@ func (s *RoleService) UpdateRole(id uuid.UUID, req *dto.UpdateRoleRequest) (*dto
 		return nil, fmt.Errorf("failed to get role: %w", err)
 	}
 
-	// Update basic fields
-	existingRole.Name = req.Name
-	existingRole.Description = req.Description
+	// Get caller's position to check permissions
+	callerPosition, err := s.GetCallerPosition()
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate permissions: %w", err)
+	}
+
+	// Cannot modify a role with higher or equal privilege
+	if existingRole.Position <= callerPosition {
+		return nil, fmt.Errorf("insufficient privileges to modify this role")
+	}
+
+	// Update basic fields if provided
+	if req.Name != "" {
+		existingRole.Name = req.Name
+	}
+
+	if req.Description != "" {
+		existingRole.Description = req.Description
+	}
+
+	// Update position if provided
+	if req.Position != nil {
+		// Cannot set position to be higher or equal to caller's privilege
+		if *req.Position <= callerPosition {
+			return nil, fmt.Errorf("cannot set position to higher privilege than your role")
+		}
+		existingRole.Position = *req.Position
+	}
 
 	// Always handle permissions explicitly - empty array will clear permissions
 	permissions, err := s.PermissionService.GetPermissionsByIDs(req.Permissions)
@@ -162,6 +205,17 @@ func (s *RoleService) AddPermissionsToRole(roleID uuid.UUID, permissionIDs []uui
 		existingRole, err := s.Repo.GetRoleByID(roleID)
 		if err != nil {
 			return err
+		}
+
+		// Check if caller has sufficient privileges to modify this role
+		callerPosition, err := s.GetCallerPosition()
+		if err != nil {
+			return fmt.Errorf("failed to validate permissions: %w", err)
+		}
+
+		// Cannot modify a role with higher or equal privilege
+		if existingRole.Position <= callerPosition {
+			return fmt.Errorf("insufficient privileges to modify this role")
 		}
 
 		// Track existing permission IDs to avoid duplicates
@@ -241,6 +295,28 @@ func (s *RoleService) RemovePermissionsFromRole(roleID uuid.UUID, permissionIDs 
 }
 
 func (s *RoleService) DeleteRole(id uuid.UUID) error {
+	// Get the role to be deleted first
+	role, err := s.Repo.GetRoleByID(id)
+	if err != nil {
+		return fmt.Errorf("failed to get role: %w", err)
+	}
+
+	// Check if caller has sufficient privileges to delete this role
+	callerPosition, err := s.GetCallerPosition()
+	if err != nil {
+		return fmt.Errorf("failed to validate permissions: %w", err)
+	}
+
+	// Cannot delete a role with higher or equal privilege
+	if role.Position <= callerPosition {
+		return fmt.Errorf("insufficient privileges to delete this role")
+	}
+
+	// Cannot delete system roles
+	if role.IsSystem {
+		return fmt.Errorf("system roles cannot be deleted")
+	}
+
 	return s.Repo.DeleteRole(id)
 }
 
@@ -250,6 +326,8 @@ func mapRoleToResponse(role *domain.Role) dto.RoleResponse {
 		ID:          role.ID,
 		Name:        role.Name,
 		Description: role.Description,
+		Position:    role.Position,
+		IsSystem:    role.IsSystem,
 		Permissions: make([]dto.PermissionResponse, 0, len(role.Permissions)),
 	}
 
@@ -262,4 +340,16 @@ func mapRoleToResponse(role *domain.Role) dto.RoleResponse {
 	}
 
 	return response
+}
+
+// GetCallerPosition retrieves the position of the caller's role
+// In a real implementation, this would extract the caller's role from a context
+// For now, we use a middleware that sets role info in fiber.Ctx.Locals
+func (s *RoleService) GetCallerPosition() (int, error) {
+	// TODO: In a real implementation, get the role position from the request context
+	// This would be implemented with context propagation through the service layer
+
+	// For demonstration purposes, we return a default position of 2 (Owner)
+	// In production, this would extract the actual role position from a user context
+	return 2, nil
 }

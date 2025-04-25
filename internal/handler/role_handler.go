@@ -1,9 +1,14 @@
 package handler
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/latoulicious/siresto-backend/internal/domain"
 	"github.com/latoulicious/siresto-backend/internal/service"
+	"github.com/latoulicious/siresto-backend/internal/utils"
 	"github.com/latoulicious/siresto-backend/pkg/dto"
 )
 
@@ -148,4 +153,113 @@ func (h *RoleHandler) DeleteRole(c *fiber.Ctx) error {
 		})
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// CreateComprehensiveRole creates a role with extensive permissions (but not system-level)
+func (h *RoleHandler) CreateComprehensiveRole(c *fiber.Ctx) error {
+	// Parse request
+	type ComprehensiveRoleRequest struct {
+		Name        string   `json:"name" validate:"required"`
+		Description string   `json:"description"`
+		Resources   []string `json:"resources" validate:"required,min=1"`
+	}
+
+	var req ComprehensiveRoleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.Error("Invalid request payload", fiber.StatusBadRequest))
+	}
+
+	// Create a new role
+	createRoleReq := &dto.CreateRoleRequest{
+		Name:        req.Name,
+		Description: req.Description,
+		Permissions: []uuid.UUID{}, // Will be filled with permissions
+	}
+
+	// For each resource, generate all CRUD + manage permissions
+	allPermissionIDs := make([]uuid.UUID, 0)
+
+	// First create permissions for all resources
+	for _, resource := range req.Resources {
+		// Format and validate the resource name
+		resourceName, err := utils.ValidateAndFormatResource(resource)
+		if err != nil {
+			continue // Skip invalid resources
+		}
+
+		// Generate CRUD + manage permissions for this resource
+		permissions := utils.GeneratePermissionBundle(resourceName)
+
+		// Save each permission
+		for i := range permissions {
+			// Try to create the permission (it might already exist)
+			if err := h.Service.PermissionService.CreatePermission(&permissions[i]); err != nil {
+				// Try to fetch it if creation fails (likely due to already existing)
+				existingPerm, fetchErr := h.Service.PermissionService.GetPermissionByName(permissions[i].Name)
+				if fetchErr != nil {
+					continue // Skip if we can't get it
+				}
+				// Use the existing permission's ID
+				allPermissionIDs = append(allPermissionIDs, existingPerm.ID)
+			} else {
+				// Use the newly created permission's ID
+				allPermissionIDs = append(allPermissionIDs, permissions[i].ID)
+			}
+		}
+	}
+
+	// Now add all the standard management permissions
+	standardManagementPermissions := []string{
+		"manage:users",
+		"manage:roles",
+		"manage:menu",
+		"manage:orders",
+		"manage:tables",
+		"manage:inventory",
+		"manage:reports",
+		"manage:settings",
+	}
+
+	for _, permName := range standardManagementPermissions {
+		// Create a placeholder permission to check if it exists
+		placeholderPerm := &domain.Permission{
+			ID:   uuid.New(),
+			Name: permName,
+			Description: fmt.Sprintf("Permission to manage all aspects of %s",
+				strings.ReplaceAll(strings.TrimPrefix(permName, "manage:"), "_", " ")),
+		}
+
+		// Try to create the permission (it might already exist)
+		if err := h.Service.PermissionService.CreatePermission(placeholderPerm); err != nil {
+			// Try to fetch it if creation fails
+			existingPerm, fetchErr := h.Service.PermissionService.GetPermissionByName(permName)
+			if fetchErr != nil {
+				continue // Skip if we can't get it
+			}
+			// Use the existing permission's ID
+			allPermissionIDs = append(allPermissionIDs, existingPerm.ID)
+		} else {
+			// Use the newly created permission's ID
+			allPermissionIDs = append(allPermissionIDs, placeholderPerm.ID)
+		}
+	}
+
+	// Set the permissions for the role
+	createRoleReq.Permissions = allPermissionIDs
+
+	// Create the role with all the permissions
+	role, err := h.Service.CreateRole(createRoleReq)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.Error(
+			"Failed to create comprehensive role",
+			fiber.StatusInternalServerError,
+			utils.NewErrorInfo("ROLE_CREATION_ERROR", err.Error(), "", nil),
+		))
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(utils.Success(
+		fmt.Sprintf("Created comprehensive role '%s' with %d permissions",
+			req.Name, len(allPermissionIDs)),
+		role,
+	))
 }
