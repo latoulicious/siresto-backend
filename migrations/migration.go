@@ -129,3 +129,21 @@ func SeedData(db *gorm.DB) error {
 
 	return nil
 }
+
+// RunSeeds executes all seed functions to populate the database with initial data
+func RunSeeds(db *gorm.DB) error {
+	log.Println("Running database seeds...")
+
+	// Seed roles (already called by SeedUsers, but keeping for consistency)
+	if err := SeedData(db); err != nil {
+		return err
+	}
+
+	// Seed users for each role
+	if err := SeedUsers(db); err != nil {
+		return err
+	}
+
+	log.Println("All seeds completed successfully")
+	return nil
+}
