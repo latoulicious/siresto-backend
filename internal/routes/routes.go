@@ -238,10 +238,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	protected.Delete("/qr-codes/:id", qrHandler.DeleteQRCodeHandler)
 	logger.LogInfo("DELETE /api/v1/qr-codes/:id route registered", logutil.Route("DELETE", "/api/v1/qr-codes/:id"))
 
-	// Category routes
-	protected.Get("/categories", categoryHandler.ListAllCategories)
-	logger.LogInfo("GET /api/v1/categories route registered", logutil.Route("GET", "/api/v1/categories"))
+	// Category routes - Public access for listing
+	v1.Get("/categories", categoryHandler.ListAllCategories)
+	logger.LogInfo("GET /api/v1/categories route registered (public)", logutil.Route("GET", "/api/v1/categories"))
 
+	// Protected Category routes
 	protected.Get("/categories/:id", categoryHandler.GetCategoryByID)
 	logger.LogInfo("GET /api/v1/categories/:id route registered", logutil.Route("GET", "/api/v1/categories/:id"))
 
@@ -300,14 +301,14 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("DELETE /api/v1/products/:product_id/variations/:id route registered", logutil.Route("DELETE", "/api/v1/products/:product_id/variations/:id"))
 
 	// Order routes
+	v1.Post("/orders", orderHandler.CreateOrder)
+	logger.LogInfo("POST /api/v1/orders route registered (public)", logutil.Route("POST", "/api/v1/orders"))
+
 	protected.Get("/orders", orderHandler.ListAllOrders)
 	logger.LogInfo("GET /api/v1/orders route registered", logutil.Route("GET", "/api/v1/orders"))
 
 	protected.Get("/orders/:id", orderHandler.GetOrderByID)
 	logger.LogInfo("GET /api/v1/orders/:id route registered", logutil.Route("GET", "/api/v1/orders/:id"))
-
-	protected.Post("/orders", orderHandler.CreateOrder)
-	logger.LogInfo("POST /api/v1/orders route registered", logutil.Route("POST", "/api/v1/orders"))
 
 	protected.Put("/orders/:id", orderHandler.UpdateOrder)
 	logger.LogInfo("PUT /api/v1/orders/:id route registered", logutil.Route("PUT", "/api/v1/orders/:id"))
@@ -330,8 +331,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, logger logging.Logger) {
 	logger.LogInfo("POST /api/v1/orders/:orderID/payments route registered", logutil.Route("POST", "/api/v1/orders/:orderID/payments"))
 
 	// Utility routes
-	protected.Get("/themes", themeHandler.ListAllThemes)
-	logger.LogInfo("GET /api/v1/themes route registered", logutil.Route("GET", "/api/v1/themes"))
+	v1.Get("/themes", themeHandler.ListAllThemes)
+	logger.LogInfo("GET /api/v1/themes route registered (public)", logutil.Route("GET", "/api/v1/themes"))
 
 	protected.Get("/themes/:id", themeHandler.GetThemeByID)
 	logger.LogInfo("GET /api/v1/themes/:id route registered", logutil.Route("GET", "/api/v1/themes/:id"))
